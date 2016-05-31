@@ -10,20 +10,21 @@ What do we have:
 
 What do we need to do:
 
-* Figure out if this notation can be legal:
-    - let {addr: .phyPc, exception: .exMMU} = mmuResp.first;
-* RV32 support
 * [bug] multicycle processor has issue with timer interrupt happening at same
   time as store commit
 * [bug] htifStall causes a problem with typing and printing at the same time
+* Change RISCV_HOME to RISCY_HOME
+* Separate code that is specific to connectal back-end
+* Link performance counter txt file with android.exe so you don't have to copy
+  over the txt file to the FPGA
+* Improve gitignore to ignore build folders
+* Figure out if this notation can be legal:
+    - let {addr: .phyPc, exception: .exMMU} = mmuResp.first;
 * Top level organization
     - Google Repo vs Git Submodules. We are currently using Git submoduels
       because of riscv-tools.
     - Do we have a separate repository for processors? What about a separate
       repo for non-processor BSV?
-* Remove Linux from this repository
-    - Replace it with a script or instructions on how to get the csail-csg
-      branch.
 * Add MIT License.
     - Do we add it to the top of all the files or just add a LICENSE file? How
       does it interact with other LICENSE files?
@@ -39,7 +40,6 @@ What do we need to do:
     - Currently we have to do loops of ticking to ensure Spike's HTIF finishes
       a syscall.
     - Console input and output doesn't stay synchronized.
-* Perform all riscv-tests on FPGA
 * [procs] Make stop interface method send a "stopped" verification packet
 * [procs] Add reset vec to a configured register like miobase
 * [riscv-opcodes] Add code to emit CSR enumeration
@@ -47,28 +47,3 @@ What do we need to do:
 * [riscv-isa-sim] Clean up tandem verification code and commit
     - Possibly add a new c++ file to spike
     - Maybe move some of the synchronization code to spike
-* Set up the directory structure
-
-    + riscv-tools (custom)
-    |   + riscv-fesvr (custom)
-    |   + riscv-gnu-toolchain
-    |   + riscv-isa-sim (custom)
-    |   + riscv-llvm
-    |   + riscv-opcodes (custom)
-    |   + riscv-pk
-    |   + riscv-tests
-    + procs
-    |   + RV64G_redux
-    |   + src
-    |   |   + bsv
-    |   |   + cpp
-    |   + scripts
-    + programs
-    |   + isa (scripts for running riscv-tests)
-    |   + benchmarks (scripts for running riscv-tests)
-    |   + other stuff
-    + connectal
-    + fpgabuild
-    + buildcache (?)
-    + androidtools (?)
-

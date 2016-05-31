@@ -3,6 +3,10 @@ ifndef PROC
 $(error PROC is not set)
 endif
 
+ifndef RISCV_HOME
+$(error RISCV_HOME is not set)
+endif
+
 CONNECTALDIR ?= $(RISCV_HOME)/connectal
 
 BSVPATH = \
