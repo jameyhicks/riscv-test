@@ -1,0 +1,33 @@
+import PerfModules::*;
+import ModuleContext::*;
+
+`define mkPerfModule(name,mkM,IFCType) \
+[Module] mkM``V(Tuple2#(PerfMonitor, IFCType));\
+    (* hide *)\
+    let _m <- toSynthBoundary(name, mkM``0);\
+    return _m;\
+endmodule\
+module [m] mkM(IFCType) provisos (IsModule#(m, a__), Context#(m, PerfContext));\
+    (* hide *)\
+    let _m <- fromSynthBoundary(name, mkM``V);\
+    return _m;\
+endmodule\
+module [m] mkM``0(IFCType) provisos(IsModule#(m, a__), Context#(m, PerfContext))
+
+`define SynthesizedPerfModuleDefinition(name,mkM,IFCType) \
+(* synthesize *)\
+module [Module] mkM``V(Tuple2#(PerfMonitor, IFCType));\
+    (* hide *)\
+    let _m <- toSynthBoundary(name, mkM``0);\
+    return _m;\
+endmodule\
+module [m] mkM(IFCType) provisos (IsModule#(m, a__), Context#(m, PerfContext));\
+    (* hide *)\
+    let _m <- fromSynthBoundary(name, mkM``V);\
+    return _m;\
+endmodule\
+module [m] mkM``0(IFCType) provisos (IsModule#(m, a__), Context#(m, PerfContext));
+
+`define PerfModuleDefinition(name,mkM,IFCType) \
+module [m] mkM(IFCType);
+

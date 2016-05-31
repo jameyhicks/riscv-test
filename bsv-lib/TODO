@@ -1,0 +1,41 @@
+* Write a Makefile for this library
+
+CompareProvisos.bsv
+-------------------
+* Write tests?
+* Write documentation
+
+ConcatReg.bsv
+-------------
+* Write tests for functionality
+* Write documentation
+* Is concatReg wrapper function really necessary?
+* Can we specify specific instances of concatReg to help with typechecking?
+
+Ehr.bsv
+-------
+* Write tests for functionality and scheduling
+* Write documentation
+* Replace with a newer implementation (where the EHR's interface doesn't take
+  a numeric type).
+* Fall back on built-in CReg implementation for n <= 5.
+
+FIFOG.bsv
+---------
+* Write tests for functionality and scheduling
+* Write documentation
+
+PerfCounter.bsv
+---------------
+* Write tests for functionality
+* Write documentation
+
+PrintTrace.bsv
+--------------
+* Write tests for functionality
+* Write documentation
+
+StringUtils.bsv
+---------------
+* Write tests for functionality
+* Write documentation

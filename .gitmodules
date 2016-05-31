@@ -1,0 +1,9 @@
+[submodule "riscv-tools"]
+	path = riscv-tools
+	url = https://github.com/csail-csg/riscv-tools.git
+[submodule "connectal"]
+	path = connectal
+	url = https://github.com/csail-csg/connectal.git
+[submodule "fpgamake"]
+	path = fpgamake
+	url = https://github.com/cambridgehackers/fpgamake.git
