@@ -1,5 +1,5 @@
 #!/bin/bash
-export RISCV_HOME=/tmp/riscy-release-candidate
+export RISCV_HOME=$HOME/riscy-release-candidate
 export RISCV_BUILD=$RISCV_HOME/build
 export RISCV_TOOLS=$RISCV_HOME/riscv
 export RISCV=$RISCV_TOOLS
