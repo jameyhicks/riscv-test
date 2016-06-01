@@ -7,8 +7,9 @@ How to use:
 2) Edit setup.sh so RISCV_HOME points to the riscy-release-candidate directory
 3) `source ./setup.sh`
 4) `cd riscv-tools`
-5) `./build.sh`
-6) `cd ../procs/RV64G_redux
-7) `make build.verilator`
-8) `./runtests.sh`
-9) select which tests you want to run
+5) ` sudo apt-get install autoconf automake autotools-dev curl libmpc-dev libmpfr-dev libgmp-dev gawk build-essential bison flex texinfo gperf libtool patchutils bc`
+6) `./build.sh`
+7) `cd ../procs/RV64G_redux
+8) `make build.verilator`
+9) `./runtests.sh`
+10) select which tests you want to run
