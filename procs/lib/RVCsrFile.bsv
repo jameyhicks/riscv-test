@@ -12,7 +12,7 @@ interface RVCsrFile;
     method ActionValue#(Tuple3#(Maybe#(Trap), Maybe#(Data), Maybe#(Addr)))
         wr( Maybe#(SystemInst) sysInst,
             CSR csr,
-            Data data /* zimm or rval */,
+            Data data, // zimm or rval
             Maybe#(ExceptionCause) e,
             Addr pc,
             Bool checkInstAlignment, // if true, addr == nextPc

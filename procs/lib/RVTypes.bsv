@@ -68,6 +68,7 @@ typedef struct {
     Bit#(12)    csrAddr;
     CSR         csr;
 } InstructionFields;
+// XXX: probably don't want a Bits instance for this type
 instance Bits#(InstructionFields, 32);
     function Bit#(32) pack(InstructionFields x);
         return x.inst;
@@ -76,16 +77,19 @@ instance Bits#(InstructionFields, 32);
         return getInstFields(x);
     endfunction
 endinstance
+// XXX: ... or an Eq instance
 instance Eq#(InstructionFields);
     function Bool \== (InstructionFields a, InstructionFields b);
         return a.inst == b.inst;
     endfunction
 endinstance
+// XXX: ... or an FShow instance
 instance FShow#(InstructionFields);
     function Fmt fshow(InstructionFields x);
         return $format("{InstructionFields: 0x%08x}",x);
     endfunction
 endinstance
+// XXX: we probably just want this function
 function InstructionFields getInstFields(Instruction x);
     return InstructionFields {
             inst:       x,
