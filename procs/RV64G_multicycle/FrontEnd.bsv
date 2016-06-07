@@ -113,8 +113,6 @@ module [m] mkMulticycleFrontEnd0(FrontEnd#(void)) provisos (HasPerfCounters#(m))
         state <= Send;
     endrule
 
-    // XXX: TODO: Continue integrating the new decode function and types (am I done with this?)
-
     rule doSend(state == Send);
         toBackEnd.enq( FrontEndToBackEnd{
             pc: pc,

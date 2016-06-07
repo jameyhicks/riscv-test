@@ -47,7 +47,6 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
 
     Reg#(Addr) pc <- mkReg(0);
     Reg#(Instruction) inst <- mkReg(0);
-    /// XXX: Reg#(InstructionFields) instFields <- mkReg(unpack(0));
     Reg#(Maybe#(ExceptionCause)) exception <- mkReg(tagged Invalid);
     Reg#(RVDecodedInst) dInst <- mkReg(unpack(0));
     Reg#(BEState) state <- mkReg(Wait);

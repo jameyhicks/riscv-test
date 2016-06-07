@@ -8,7 +8,6 @@ import DefaultValue::*;
 import ClientServer::*;
 import Connectable::*;
 import GetPut::*;
-//import MemTypes::*; // XXX: Remove this
 import RVTypes::*;
 import Vector::*;
 import VerificationPacket::*;
