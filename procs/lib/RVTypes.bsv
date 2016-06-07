@@ -300,88 +300,6 @@ instance IsMemOp#(RVMemAmoOp);
     endfunction
 endinstance
 
-// MEMORYTYPES.BSV
-
-//typedef Data MemResp;
-//
-//typedef enum{Ld, St} MemOp deriving (Eq,Bits,FShow);
-//typedef struct{
-//    MemOp           op;
-//    ByteEn          byteEn;
-//    Addr            addr;
-//    Data            data;
-//    Maybe#(AmoInst) amoInst;
-//} MemReq deriving (Eq, Bits);
-//
-//typedef 64 WideLineSz;
-//typedef Bit#(WideLineSz) WideLine;
-//typedef WideLine WideMemResp;
-//
-//typedef TDiv#(WideLineSz, 8) WideNumBytes;
-//typedef TDiv#(WideLineSz, DataSz) WideNumData;
-//typedef TLog#(WideNumBytes) WideIndxShamt;
-//typedef Vector#(WideNumBytes, Bool) WideByteEn;
-//
-//typedef struct {
-//  MemOp op;
-//  WideByteEn byteEn;
-//  Addr addr;
-//  WideLine data;
-//} WideMemReq deriving (Eq, Bits);
-//
-//interface WideMem;
-//  interface Server#(WideMemReq, WideMemResp) to_proc;
-//  interface Server#(WideMemReq, WideMemResp) to_host;
-//endinterface
-//
-//typedef enum {InstMem, DataMem} MemPort deriving (Bits, Eq);
-//
-//Bit#(3) memB    = 3'b000;
-//Bit#(3) memH    = 3'b001;
-//Bit#(3) memW    = 3'b010;
-//Bit#(3) memD    = 3'b011;
-//Bit#(3) memBU   = 3'b100;
-//Bit#(3) memHU   = 3'b101;
-//Bit#(3) memWU   = 3'b110;
-//
-//typedef 16 NumTokens;
-//typedef Bit#(TLog#(NumTokens)) Token;
-//
-//typedef 16 LoadBufferSz;
-//typedef Bit#(TLog#(LoadBufferSz)) LoadBufferIndex;
-//
-//interface MemoryToHost;
-//  method ActionValue#(Tuple2#(MemPort, MemReq)) req;
-//  method Action resp(Tuple2#(MemPort, MemResp) r);
-//endinterface
-//
-//(* synthesize *)
-//module mkDummyMemoryToHost(MemoryToHost);
-//  method ActionValue#(Tuple2#(MemPort, MemReq)) req if(False);
-//    return ?;
-//  endmethod
-//
-//  method Action resp(Tuple2#(MemPort, MemResp) r);
-//  endmethod
-//endmodule
-//
-//interface WideMemoryToHost;
-//  method ActionValue#(Tuple2#(MemPort, WideMemReq)) req;
-//  method Action resp(Tuple2#(MemPort, WideMemResp) r);
-//endinterface
-//
-//(* synthesize *)
-//module mkDummyWideMemoryToHost(WideMemoryToHost);
-//  method ActionValue#(Tuple2#(MemPort, WideMemReq)) req if(False);
-//    return ?;
-//  endmethod
-//
-//  method Action resp(Tuple2#(MemPort, WideMemResp) r);
-//  endmethod
-//endmodule
-
-// PROCTYPES.BSV
-
 typedef struct {
     Bool rv64;
     // ISA modes
@@ -396,6 +314,19 @@ typedef struct {
     // non-standard extensions
     Bool x;
 } RiscVISASubset deriving (Bits, Eq, FShow);
+
+`ifndef m
+`define m False
+`endif
+`ifndef a
+`define a False
+`endif
+`ifndef f
+`define f False
+`endif
+`ifndef d
+`define d False
+`endif
 
 instance DefaultValue#(RiscVISASubset);
     function RiscVISASubset defaultValue = RiscVISASubset{ rv64: `rv64 , h: False, s: True, u: True, m: `m , a: `a , f: `f , d: `d , x: False };
@@ -648,8 +579,6 @@ function Bool isValidCSR(CSR csr, Bool fpuEn);
             CSRmibound:   True;
             CSRmdbase:    True;
             CSRmdbound:   True;
-            // Machine Read/Write Shadow of Hypervisor Read-Only Registers
-            // TODO: implement
             // Machine Host-Target Interface (Non-Standard Berkeley Extension)
             CSRmtohost:   True;
             CSRmfromhost: True;
@@ -659,47 +588,40 @@ function Bool isValidCSR(CSR csr, Bool fpuEn);
         endcase);
 endfunction
 
-// typedef enum {Unsupported, Amo, Alu, Ld, St, Lr, Sc, J, Jr, Br, Csr, Auipc, Priv, Interrupt, Fence, SFence, Fpu, Sret, Mrts} IType deriving (Bits, Eq, FShow);
-
 // These enumeration values match the bit values for funct3
 typedef enum {
     Eq   = 3'b000,
     Neq  = 3'b001,
-    Jal  = 3'b010, // XXX: was AT
-    Jalr = 3'b011, // XXX: was NT
+    Jal  = 3'b010,
+    Jalr = 3'b011,
     Lt   = 3'b100,
     Ge   = 3'b101,
     Ltu  = 3'b110,
     Geu  = 3'b111
 } BrFunc deriving (Bits, Eq, FShow);
 
-// TODO: separate w into a separate field in AluInst
+// This encoding tries to match {inst[30], funct3}
 typedef enum {
-    Add,
-    Addw,
-    Sub,
-    Subw,
-    And,
-    Or,
-    Xor,
-    Slt,
-    Sltu,
-    Sll,
-    Sllw,
-    Sra,
-    Sraw,
-    Srl,
-    Srlw
+    Add  = 4'b0000,
+    Sll  = 4'b0001,
+    Slt  = 4'b0010,
+    Sltu = 4'b0011,
+    Xor  = 4'b0100,
+    Srl  = 4'b0101,
+    Or   = 4'b0110,
+    And  = 4'b0111,
+    Sub  = 4'b1000,
+    Sra  = 4'b1101,
+    // These don't follow the {inst[30], funct3} encoding since they use
+    // different opcodes
+    // TODO: check the values of these instructions
+    // XXX: Should these not specify a value?
+    Auipc = 5'b10000,
+    Lui   = 5'b11000
 } AluFunc deriving (Bits, Eq, FShow);
-typedef enum {
-    Lui,
-    Auipc
-} AluSpecial deriving (Bits, Eq, FShow);
-// XXX: Should this be a struct or a tagged union?
-// XXX: Or maybe just add Lui and Auipc to AluFunc?
 typedef struct {
     AluFunc             op;
-    Maybe#(AluSpecial)  special;
+    Bool                w;
 } AluInst deriving (Bits, Eq, FShow);
 
 typedef enum {
@@ -770,7 +692,8 @@ typedef enum {
     CSRRW,
     CSRRS,
     CSRRC,
-    CSRR // read-only CSR operation
+    CSRR, // read-only CSR operation
+    CSRW // write-only CSR operation
 } SystemInst deriving (Bits, Eq, FShow);
 
 // LdStInst and AmoInst are defined in Types.bsv
@@ -785,13 +708,6 @@ typedef union tagged {
     // void        Other; // Should be none
 } ExecFunc deriving (Bits, Eq, FShow);
 
-// Old RegType:
-// typedef enum {
-//     None = 2'b00,
-//     Gpr  = 2'b10,
-//     Fpu  = 2'b11
-// } RegType deriving (Bits, Eq, FShow);
-// XXX: New RegType:
 typedef enum {
     Gpr = 1'b0,
     Fpu = 1'b1

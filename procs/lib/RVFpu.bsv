@@ -277,11 +277,13 @@ endfunction
 function Tuple2#(Bit#(64), Exception) fmin_s(Bit#(64) in1, Bit#(64) in2);
     Float in1_f = unpack(in1[31:0]);
     Float in2_f = unpack(in2[31:0]);
+    Float nan_f = qnan(); // canonical NAN
     Exception e = unpack(0);
-    if (isSNaN(in1_f) || isSNaN(in2_f)) begin
+
+    if (isSNaN(in1_f) || isSNaN(in2_f) || (isNaN(in1_f) && isNaN(in2_f))) begin
         e.invalid_op = True;
-    end
-    if (isNaN(in2_f)) begin
+        return tuple2(zeroExtend(pack(nan_f)), e);
+    end else if (isNaN(in2_f)) begin
         return tuple2(in1, e);
     end else if (isNaN(in1_f)) begin
         return tuple2(in2, e);
@@ -300,11 +302,13 @@ endfunction
 function Tuple2#(Bit#(64), Exception) fmin_d(Bit#(64) in1, Bit#(64) in2);
     Double in1_f = unpack(in1);
     Double in2_f = unpack(in2);
+    Double nan_f = qnan(); // canonical NAN
     Exception e = unpack(0);
-    if (isSNaN(in1_f) || isSNaN(in2_f)) begin
+
+    if (isSNaN(in1_f) || isSNaN(in2_f) || (isNaN(in1_f) && isNaN(in2_f))) begin
         e.invalid_op = True;
-    end
-    if (isNaN(in2_f)) begin
+        return tuple2(pack(nan_f), e);
+    end else if (isNaN(in2_f)) begin
         return tuple2(in1, e);
     end else if (isNaN(in1_f)) begin
         return tuple2(in2, e);
@@ -323,11 +327,13 @@ endfunction
 function Tuple2#(Bit#(64), Exception) fmax_s(Bit#(64) in1, Bit#(64) in2);
     Float in1_f = unpack(in1[31:0]);
     Float in2_f = unpack(in2[31:0]);
+    Float nan_f = qnan(); // canonical NAN
     Exception e = unpack(0);
-    if (isSNaN(in1_f) || isSNaN(in2_f)) begin
+
+    if (isSNaN(in1_f) || isSNaN(in2_f) || (isNaN(in1_f) && isNaN(in2_f))) begin
         e.invalid_op = True;
-    end
-    if (isNaN(in2_f)) begin
+        return tuple2(zeroExtend(pack(nan_f)), e);
+    end else if (isNaN(in2_f)) begin
         return tuple2(in1, e);
     end else if (isNaN(in1_f)) begin
         return tuple2(in2, e);
@@ -346,11 +352,13 @@ endfunction
 function Tuple2#(Bit#(64), Exception) fmax_d(Bit#(64) in1, Bit#(64) in2);
     Double in1_f = unpack(in1);
     Double in2_f = unpack(in2);
+    Double nan_f = qnan(); // canonical NAN
     Exception e = unpack(0);
-    if (isSNaN(in1_f) || isSNaN(in2_f)) begin
+
+    if (isSNaN(in1_f) || isSNaN(in2_f) || (isNaN(in1_f) && isNaN(in2_f))) begin
         e.invalid_op = True;
-    end
-    if (isNaN(in2_f)) begin
+        return tuple2(pack(nan_f), e);
+    end else if (isNaN(in2_f)) begin
         return tuple2(in1, e);
     end else if (isNaN(in1_f)) begin
         return tuple2(in2, e);
@@ -506,14 +514,6 @@ function Tuple2#(FloatingPoint#(e, m), Exception) int_to_float( Bit#(65) in, Boo
     end
     return vFixedToFloat(in_signed, 1'b0, rmode);
 endfunction
-
-// FIXME: finish or remove
-// function Tuple2#(Data, Exception) apply_float_op( function a f(Float x1, Float x2), Data rVal1, Data rVal2 );
-//     Float f1 = unpack(truncate(rVal1));
-//     Float f2 = unpack(truncate(rVal2));
-//     a f_op_res = f(f1,f2);
-//     Data res = zeroExtend(pack(f_res));
-// endfunction
 
 // exec function for simple operations
 (* noinline *)

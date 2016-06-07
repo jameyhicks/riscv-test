@@ -20,25 +20,35 @@ import RVTypes::*;
 import Vector::*;
 
 (* noinline *)
-function Data alu(AluFunc func, Data a, Data b);
+function Data alu(AluFunc func, Bool w, Data a, Data b);
+    // setup inputs
+    if (w) begin
+        a = (func == Sra) ? signExtend(a[31:0]) : zeroExtend(a[31:0]);
+        b = zeroExtend(b[31:0]);
+    end
+    Bit#(6) shamt = truncate(b);
+    if (w) begin
+        shamt = {1'b0, shamt[4:0]};
+    end
+
     Data res = (case(func)
-            Add:        (a + b);
-            Addw:       signExtend((a + b)[31:0]);
+            Add, Auipc, Lui: (a + b);
             Sub:        (a - b);
-            Subw:       signExtend((a[31:0] - b[31:0])[31:0]);
             And:        (a & b);
             Or:         (a | b);
             Xor:        (a ^ b);
             Slt:        zeroExtend( pack( signedLT(a, b) ) );
             Sltu:       zeroExtend( pack( a < b ) );
-            Sll:        (a << b[5:0]);
-            Sllw:       signExtend((a[31:0] << b[4:0])[31:0]);
-            Srl:        (a >> b[5:0]);
-            Sra:        signedShiftRight(a, b[5:0]);
-            Srlw:       signExtend((a[31:0] >> b[4:0])[31:0]);
-            Sraw:       signExtend(signedShiftRight(a[31:0], b[4:0])[31:0]);
+            Sll:        (a << shamt);
+            Srl:        (a >> shamt);
+            Sra:        signedShiftRight(a, shamt);
             default:    0;
         endcase);
+
+    if (w) begin
+        res = signExtend(res[31:0]);
+    end
+
     return res;
 endfunction
 
@@ -108,14 +118,15 @@ function ExecResult basicExec(RVDecodedInst dInst, Data rVal1, Data rVal2, Addr 
     Data aluVal2 = imm matches tagged Valid .validImm ? validImm : rVal2;
     if (dInst.execFunc matches tagged Alu .aluInst) begin
         // Special functions use special inputs
-        case (aluInst.special) matches
-            tagged Valid Auipc: aluVal1 = pc;
-            tagged Valid Lui:   aluVal1 = 0;
+        case (aluInst.op) matches
+            Auipc: aluVal1 = pc;
+            Lui:   aluVal1 = 0;
         endcase
     end
     // Use Add as default for memory instructions so alu result is the address
     AluFunc aluF = dInst.execFunc matches tagged Alu .aluInst ? aluInst.op : Add;
-    Data aluResult = alu(aluF, aluVal1, aluVal2);
+    Bool w = dInst.execFunc matches tagged Alu .aluInst ? aluInst.w : False;
+    Data aluResult = alu(aluF, w, aluVal1, aluVal2);
 
     // Branch
     if (dInst.execFunc matches tagged Br .brFunc) begin

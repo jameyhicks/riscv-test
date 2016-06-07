@@ -700,8 +700,9 @@ module mkRVCsrFileWithId#(Data hartid)(RVCsrFile);
                 ERet:       noAction;   // All these 'noActions' will be handled later in this method
                 WFI:        noAction;
                 MRTS:       noAction;
-                CSRRW, CSRRS, CSRRC, CSRR:
+                CSRRW, CSRRS, CSRRC, CSRR, CSRW:
                             begin
+                                Bool read = (validSysInst != CSRW);
                                 Bool write = (validSysInst != CSRR);
                                 if (!isValidCSR(csr, (fs_reg != 0)) || !hasCSRPermission(csr, prv_reg, write)) begin
                                     pendingException = tagged Valid IllegalInst;
@@ -735,7 +736,7 @@ module mkRVCsrFileWithId#(Data hartid)(RVCsrFile);
             end else if (validSysInst == CSRRW || validSysInst == CSRRS || validSysInst == CSRRC) begin
                 // CSR read/write operation
                 let oldVal = get_csr(csr)._read;
-                let newVal = (case(validSysInst) matches
+                let newVal = (case(validSysInst)
                         CSRRW: data;
                         CSRRS: (oldVal | data);
                         CSRRC: (oldVal & (~data));
@@ -751,6 +752,12 @@ module mkRVCsrFileWithId#(Data hartid)(RVCsrFile);
                 if (verbose) $fdisplay(fout, "[RVCSRF] ", fshow(validSysInst), " :: ", fshow(csr), " = ", fshow(oldVal));
                 wrIndirect(0, False, False); // This is used to increment instret // TODO: clean this up
                 return tuple3(tagged Invalid, tagged Valid oldVal, tagged Invalid);
+            end else if (validSysInst == CSRW) begin
+                // CSR write operation
+                wrDirect(csr, data); // This increments instret // TODO: clean this up
+                // return oldVal
+                if (verbose) $fdisplay(fout, "[RVCSRF] ", fshow(validSysInst), " :: ", fshow(csr), " - ? -> ", fshow(data));
+                return tuple3(tagged Invalid, tagged Invalid, tagged Invalid);
             end else begin
                 // all other system instructions are NOP's
                 wrIndirect(fflags, fpuDirty, xDirty);

@@ -21,41 +21,41 @@ function Maybe#(ExecFunc) toExecFuncI(Instruction inst);
             `JAL:   tagged Valid (tagged Br Jal);
 
             // LUI
-            `LUI:   tagged Valid (tagged Alu AluInst{op: Add,  special: tagged Valid Lui});
+            `LUI:   tagged Valid (tagged Alu AluInst{op: Lui,   w: False});
             // AUIPC
-            `AUIPC: tagged Valid (tagged Alu AluInst{op: Add,  special: tagged Valid Auipc});
+            `AUIPC: tagged Valid (tagged Alu AluInst{op: Auipc, w: False});
             // OP-IMM
-            `ADDI:  tagged Valid (tagged Alu AluInst{op: Add,  special: tagged Invalid});
-            `SLLI:  tagged Valid (tagged Alu AluInst{op: Sll,  special: tagged Invalid});
-            `SLTI:  tagged Valid (tagged Alu AluInst{op: Slt,  special: tagged Invalid});
-            `SLTIU: tagged Valid (tagged Alu AluInst{op: Sltu, special: tagged Invalid});
-            `XORI:  tagged Valid (tagged Alu AluInst{op: Xor,  special: tagged Invalid});
-            `SRLI:  tagged Valid (tagged Alu AluInst{op: Srl,  special: tagged Invalid});
-            `SRAI:  tagged Valid (tagged Alu AluInst{op: Sra,  special: tagged Invalid});
-            `ORI:   tagged Valid (tagged Alu AluInst{op: Or,   special: tagged Invalid});
-            `ANDI:  tagged Valid (tagged Alu AluInst{op: And,  special: tagged Invalid});
+            `ADDI:  tagged Valid (tagged Alu AluInst{op: Add,   w: False});
+            `SLLI:  tagged Valid (tagged Alu AluInst{op: Sll,   w: False});
+            `SLTI:  tagged Valid (tagged Alu AluInst{op: Slt,   w: False});
+            `SLTIU: tagged Valid (tagged Alu AluInst{op: Sltu,  w: False});
+            `XORI:  tagged Valid (tagged Alu AluInst{op: Xor,   w: False});
+            `SRLI:  tagged Valid (tagged Alu AluInst{op: Srl,   w: False});
+            `SRAI:  tagged Valid (tagged Alu AluInst{op: Sra,   w: False});
+            `ORI:   tagged Valid (tagged Alu AluInst{op: Or,    w: False});
+            `ANDI:  tagged Valid (tagged Alu AluInst{op: And,   w: False});
             // OP
-            `ADD:   tagged Valid (tagged Alu AluInst{op: Add,  special: tagged Invalid});
-            `SUB:   tagged Valid (tagged Alu AluInst{op: Sub,  special: tagged Invalid});
-            `SLL:   tagged Valid (tagged Alu AluInst{op: Sll,  special: tagged Invalid});
-            `SLT:   tagged Valid (tagged Alu AluInst{op: Slt,  special: tagged Invalid});
-            `SLTU:  tagged Valid (tagged Alu AluInst{op: Sltu, special: tagged Invalid});
-            `XOR:   tagged Valid (tagged Alu AluInst{op: Xor,  special: tagged Invalid});
-            `SRL:   tagged Valid (tagged Alu AluInst{op: Srl,  special: tagged Invalid});
-            `SRA:   tagged Valid (tagged Alu AluInst{op: Sra,  special: tagged Invalid});
-            `OR:    tagged Valid (tagged Alu AluInst{op: Or,   special: tagged Invalid});
-            `AND:   tagged Valid (tagged Alu AluInst{op: And,  special: tagged Invalid});
+            `ADD:   tagged Valid (tagged Alu AluInst{op: Add,   w: False});
+            `SUB:   tagged Valid (tagged Alu AluInst{op: Sub,   w: False});
+            `SLL:   tagged Valid (tagged Alu AluInst{op: Sll,   w: False});
+            `SLT:   tagged Valid (tagged Alu AluInst{op: Slt,   w: False});
+            `SLTU:  tagged Valid (tagged Alu AluInst{op: Sltu,  w: False});
+            `XOR:   tagged Valid (tagged Alu AluInst{op: Xor,   w: False});
+            `SRL:   tagged Valid (tagged Alu AluInst{op: Srl,   w: False});
+            `SRA:   tagged Valid (tagged Alu AluInst{op: Sra,   w: False});
+            `OR:    tagged Valid (tagged Alu AluInst{op: Or,    w: False});
+            `AND:   tagged Valid (tagged Alu AluInst{op: And,   w: False});
             // OP-IMM-32
-            `ADDIW: tagged Valid (tagged Alu AluInst{op: Addw, special: tagged Invalid});
-            `SLLIW: tagged Valid (tagged Alu AluInst{op: Sllw, special: tagged Invalid});
-            `SRLIW: tagged Valid (tagged Alu AluInst{op: Srlw, special: tagged Invalid});
-            `SRAIW: tagged Valid (tagged Alu AluInst{op: Sraw, special: tagged Invalid});
+            `ADDIW: tagged Valid (tagged Alu AluInst{op: Add,   w: True});
+            `SLLIW: tagged Valid (tagged Alu AluInst{op: Sll,   w: True});
+            `SRLIW: tagged Valid (tagged Alu AluInst{op: Srl,   w: True});
+            `SRAIW: tagged Valid (tagged Alu AluInst{op: Sra,   w: True});
             // OP-32
-            `ADDW:  tagged Valid (tagged Alu AluInst{op: Addw, special: tagged Invalid});
-            `SUBW:  tagged Valid (tagged Alu AluInst{op: Subw, special: tagged Invalid});
-            `SLLW:  tagged Valid (tagged Alu AluInst{op: Sllw, special: tagged Invalid});
-            `SRLW:  tagged Valid (tagged Alu AluInst{op: Srlw, special: tagged Invalid});
-            `SRAW:  tagged Valid (tagged Alu AluInst{op: Sraw, special: tagged Invalid});
+            `ADDW:  tagged Valid (tagged Alu AluInst{op: Add,   w: True});
+            `SUBW:  tagged Valid (tagged Alu AluInst{op: Sub,   w: True});
+            `SLLW:  tagged Valid (tagged Alu AluInst{op: Sll,   w: True});
+            `SRLW:  tagged Valid (tagged Alu AluInst{op: Srl,   w: True});
+            `SRAW:  tagged Valid (tagged Alu AluInst{op: Sra,   w: True});
 
             // LOAD
             `LB:    tagged Valid (tagged Mem RVMemInst{op: tagged Mem Ld, size: B});
@@ -92,10 +92,10 @@ function Maybe#(ExecFunc) toExecFuncSupervisor(Instruction inst);
             `MRTH:      tagged Invalid;
             `MRTS:      tagged Valid (tagged System MRTS);
             `HRTS:      tagged Invalid;
-            `CSRRW:     tagged Valid (tagged System CSRRW);
+            `CSRRW:     tagged Valid (tagged System ((instFields.rd == 0) ? CSRW : CSRRW));
             `CSRRS:     tagged Valid (tagged System ((instFields.rs1 == 0) ? CSRR : CSRRS));
             `CSRRC:     tagged Valid (tagged System ((instFields.rs1 == 0) ? CSRR : CSRRC));
-            `CSRRWI:    tagged Valid (tagged System CSRRW);
+            `CSRRWI:    tagged Valid (tagged System ((instFields.rd == 0) ? CSRW : CSRRW));
             `CSRRSI:    tagged Valid (tagged System ((instFields.rs1 == 0) ? CSRR : CSRRS));
             `CSRRCI:    tagged Valid (tagged System ((instFields.rs1 == 0) ? CSRR : CSRRC));
             default:    tagged Invalid;
@@ -286,16 +286,4 @@ function Maybe#(Data) getImmediate(ImmType imm, Instruction inst);
             default: tagged Invalid;
         endcase);
 endfunction
-
-// All this does is add the CSR state to the decoding
-// XXX: TODO: Fix this instruction
-///function RVDecodedInst updateRoundingMode(RVDecodedInst dInst, CsrState csrState);
-///    if (dInst.execFunc matches tagged Fpu .fpu_f) begin
-///        // update rounding mode
-///        let new_fpu_f = fpu_f;
-///        new_fpu_f.rm = (fpu_f.rm == RDyn) ? unpack(csrState.frm) : fpu_f.rm;
-///        dInst.execFunc = tagged Fpu new_fpu_f;
-///    end
-///    return dInst;
-///endfunction
 
