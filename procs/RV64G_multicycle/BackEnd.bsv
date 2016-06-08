@@ -16,6 +16,11 @@ import RVMulDiv::*;
 import RVTypes::*;
 import VerificationPacket::*;
 
+import RVAlu::*;
+import RVControl::*;
+import RVDecode::*;
+import RVMemory::*;
+
 typedef enum {
     Wait,
     RegRead,
@@ -53,7 +58,9 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
     Reg#(Data) rVal1 <- mkReg(0);
     Reg#(Data) rVal2 <- mkReg(0);
     Reg#(Data) rVal3 <- mkReg(0);
-    Reg#(FullResult) result <- mkReg(unpack(0));
+    Reg#(Data) data <- mkReg(0);
+    Reg#(Data) addr <- mkReg(0);
+    Reg#(Data) nextPc <- mkReg(0);
 
     ArchRFile rf <- mkArchRFile;
     RVCsrFile csrf <- mkRVCsrFile;
@@ -87,14 +94,44 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
     endrule
 
     rule doExecute(state == Execute);
-        let resultEx = toFullResult(basicExec(dInst, rVal1, rVal2, pc, '1 /* ppc */ ));
-        // special cases beyond integer ALU:
+        let dataEx = 0;
+        let addrEx = 0;
+        let nextPcEx = pc + 4;
+
+        Maybe#(Data) imm = getImmediate(dInst.imm, dInst.inst);
         case (dInst.execFunc) matches
+            tagged Alu    .aluInst:
+                begin
+                    dataEx = execAluInst(aluInst, rVal1, rVal2, imm, pc);
+                end
+            tagged Br     .brFunc:
+                begin
+                    // data for jal
+                    dataEx = pc + 4;
+                    nextPcEx = execControl(brFunc, rVal1, rVal2, imm, pc);
+                end
+            tagged Mem    .memInst:
+                begin
+                    // data for store and AMO
+                    dataEx = rVal2;
+                    addrEx = addrCalc(rVal1, imm);
+                    mmuReq.enq(RVDMMUReq {addr: addrEx, size: memInst.size, op: (memInst.op matches tagged Mem .memOp ? memOp : St)});
+                end
             tagged MulDiv .mulDivInst: mulDiv.exec(mulDivInst, rVal1, rVal2);
+            tagged Fence  .fenceInst:  noAction;
+            // TODO: Handle dynamic rounding mode
             tagged Fpu    .fpuInst:    fpu.exec(fpuInst, getInstFields(inst).rm, rVal1, rVal2, rVal3);
-            tagged Mem    .memInst:    mmuReq.enq(RVDMMUReq {addr: resultEx.vaddr, size: memInst.size, op: (memInst.op matches tagged Mem .memOp ? memOp : St)});
+            tagged System .systemInst:
+                begin
+                    // data for CSR instructions
+                    dataEx = fromMaybe(rVal1, imm);
+                end
         endcase
-        result <= resultEx;
+
+        data <= dataEx;
+        addr <= addrEx;
+        nextPc <= nextPcEx;
+
         state <= dInst.execFunc matches tagged Mem .* ? Mem : WB;
     endrule
 
@@ -109,7 +146,7 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
                     op: dInst.execFunc.Mem.op,
                     byteEn: toByteEn(dInst.execFunc.Mem.size),
                     addr: pAddr,
-                    data: result.data,
+                    data: data,
                     unsignedLd: isUnsigned(dInst.execFunc.Mem.size) } );
             if (dInst.execFunc.Mem.op == tagged Mem Ld) begin
                 loadCounter.increment(1);
@@ -125,33 +162,31 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
     endrule
 
     rule doWB(state == WB);
-        let resultWB = result;
+        let dataWb = data;
+        let addrWb = addr;
+        let nextPcWb = nextPc;
+        let fflagsWb = 0;
         let exceptionWB = exception;
-        let nextPc = result.controlFlow.nextPc;
+
         case(dInst.execFunc) matches
             tagged MulDiv .*: begin
-                    resultWB.data = mulDiv.result_data();
+                    dataWb = mulDiv.result_data();
                     mulDiv.result_deq;
                 end
             tagged Fpu .*: begin
                     let fpuResult = toFullResult(fpu.result_data);
-                    resultWB.data = fpuResult.data;
-                    resultWB.fflags = fpuResult.fflags;
+                    dataWb = fpuResult.data;
+                    fflagsWb = fpuResult.fflags;
                     fpu.result_deq;
                 end
             tagged Mem .memInst:
                 begin
                     if (getsResponse(memInst.op)) begin
-                        resultWB.data = memResp.first;
+                        dataWb = memResp.first;
                         memResp.deq;
                     end
                 end
         endcase
-
-        // Check for misaligned PCs
-        if (!isValid(exceptionWB) && ((truncate(nextPc) & 2'b11) != 0)) begin
-            exceptionWB = tagged Valid InstAddrMisaligned;
-        end
 
         // TODO: add comment
         Bool extensionDirty = False;
@@ -160,14 +195,14 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
                 // performing system instructions
                 dInst.execFunc matches tagged System .sysInst ? tagged Valid sysInst : tagged Invalid,
                 getInstFields(inst).csr,
-                resultWB.data,  // either rf[rs1] or zimm, computed in basicExec
+                dataWb,  // either rf[rs1] or zimm, computed in basicExec
                 // handling exceptions
                 exceptionWB,    // exception cause
                 pc,             // for writing to mepc/sepc
                 dInst.execFunc matches tagged Br .* ? True : False, // check inst allignment if Br Func
-                resultWB.vaddr, // either data address or next PC, used to detect misaligned instruction addresses
+                dInst.execFunc matches tagged Br .* ? nextPcWb : addrWb, // either data address or next PC, used to detect misaligned instruction addresses
                 // indirect writes
-                resultWB.fflags,
+                fflagsWb,
                 fpuDirty,
                 extensionDirty);
 
@@ -175,8 +210,8 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
         verificationPackets.enq( VerificationPacket {
                 skippedPackets: 0,
                 pc: pc,
-                nextPc: fromMaybe(resultWB.controlFlow.nextPc, maybeNextPc),
-                data: fromMaybe(resultWB.data, maybeData),
+                nextPc: fromMaybe(nextPcWb, maybeNextPc),
+                data: fromMaybe(dataWb, maybeData),
                 instruction: inst,
                 dst: {pack(dInst.dst), getInstFields(inst).rd},
                 trap: isValid(maybeTrap),
@@ -189,18 +224,13 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
             // This instruction didn't retire
 
             // redirect happens in Trap2
-            // redirect.enq( Redirect {
-            //         pc: replayPc,
-            //         epoch: ?,
-            //         frontEndCsrs: FrontEndCsrs { vmI: csrf.vmI, state: csrf.csrState } } );
-
-            pc <= replayPc;
+            nextPc <= replayPc;
             state <= Trap2;
         end else begin
             // This instruction retired
             if (dInst.dst matches tagged Valid .dstRegType) begin
                 // Use data from CSR if available
-                rf.wr(dstRegType, getInstFields(inst).rd, fromMaybe(resultWB.data, maybeData));
+                rf.wr(dstRegType, getInstFields(inst).rd, fromMaybe(dataWb, maybeData));
             end
             // always redirect
             redirect.enq( Redirect {
@@ -220,7 +250,7 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
                 exception, // exception cause
                 pc, // pc
                 False, 
-                result.vaddr, // vaddr
+                addr, // vaddr
                 0,
                 False,
                 False);
@@ -230,7 +260,7 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
                 skippedPackets: 0,
                 pc: pc,
                 nextPc: fromMaybe(?, maybeNextPc),
-                data: fromMaybe(result.data, maybeData),
+                data: fromMaybe(data, maybeData),
                 instruction: inst,
                 dst: {pack(dInst.dst), getInstFields(inst).rd},
                 trap: isValid(maybeTrap),
@@ -241,14 +271,14 @@ module [m] mkMulticycleBackEnd0(BackEnd#(void)) provisos (HasPerfCounters#(m));
 
         // redirection will happpen in trap2
         // by construction maybeNextPc is always valid
-        pc <= fromMaybe(?, maybeNextPc);
+        nextPc <= fromMaybe(?, maybeNextPc);
         state <= Trap2;
     endrule
 
     // There is a second trap state to ensure that the frontEndCsrs reflect the updated state of the processor
     rule doTrap2(state == Trap2);
         redirect.enq( Redirect {
-            pc: pc,
+            pc: nextPc,
             epoch: ?,
             frontEndCsrs: FrontEndCsrs { vmI: csrf.vmI, state: csrf.csrState }
         } );
