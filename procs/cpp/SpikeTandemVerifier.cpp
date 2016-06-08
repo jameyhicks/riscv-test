@@ -47,6 +47,16 @@ bool SpikeTandemVerifier::checkVerificationPacket(VerificationPacket packet) {
         if (packet.trapType == 0x82) {
             forceTrap = true;
             forceTrapCause = (1ULL << 63) | 2;
+            // make sure spike's HTIF sees the host interrupt
+            unsigned int tickcount = 0;
+            while(sim->get_core(0)->get_state()->fromhost == 0) {
+                sim->get_htif()->tick();
+                tickcount++;
+                if (tickcount % 10000 == 0) {
+                    std::cerr << std::endl;
+                    std::cerr << "[WARNING] hit " << tickcount << " HTIF ticks before host interrupt synchronization" << std::endl;
+                }
+            }
         }
     }
 
