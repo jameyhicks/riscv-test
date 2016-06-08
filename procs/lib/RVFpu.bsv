@@ -16,8 +16,8 @@ import FloatingPoint::*;
 function FloatingPoint#(e,m) canonicalNaN = FloatingPoint{sign: False, exp: '1, sfd: 1 << (valueof(m)-1)};
 
 typedef struct {
-    Data              data;
-    Bit#(5)           fflags;
+    Data    data;
+    Bit#(5) fflags;
 } FpuResult deriving(Bits, Eq, FShow);
 instance FullResultSubset#(FpuResult);
     function FullResult updateFullResult(FpuResult x, FullResult full_result);
@@ -409,11 +409,11 @@ function Tuple2#(Bit#(64), Exception) float_to_int(FloatingPoint#(e, m) in, Bool
         if (int_val[1:0] != 0) begin
             exc.inexact = True;
             case (rmode)
-                Rnd_Nearest_Even:             round_up = (int_val[1:0] == 2'b11) || ((int_val[1:0] == 2'b10) && (int_val[2] == 1));
-                Rnd_Nearest_Away_Zero:    round_up = (int_val[1] == 1);
-                Rnd_Plus_Inf:                     round_up = !in.sign;
-                Rnd_Minus_Inf:                    round_up = in.sign;
-                Rnd_Zero:                             round_up = False;
+                Rnd_Nearest_Even:       round_up = (int_val[1:0] == 2'b11) || ((int_val[1:0] == 2'b10) && (int_val[2] == 1));
+                Rnd_Nearest_Away_Zero:  round_up = (int_val[1] == 1);
+                Rnd_Plus_Inf:           round_up = !in.sign;
+                Rnd_Minus_Inf:          round_up = in.sign;
+                Rnd_Zero:               round_up = False;
             endcase
         end
 
@@ -814,13 +814,13 @@ module mkFpuExecPipeline(FpuExec);
             // Fpu Decoding
             case (fpu_f)
                 // pipeline instructions
-                FAdd:     begin {out, exc} <- float_add.response.get; pipeline_result = True; end
-                FSub:     begin {out, exc} <- float_add.response.get; pipeline_result = True; end
-                FMul:     begin {out, exc} <- float_mult.response.get; pipeline_result = True; end
-                FDiv:     begin {out, exc} <- float_div.response.get; pipeline_result = True; end
-                FSqrt:    begin {out, exc} <- float_sqrt.response.get; pipeline_result = True; end
-                FMAdd:    begin {out, exc} <- float_fma.response.get; pipeline_result = True; end
-                FMSub:    begin {out, exc} <- float_fma.response.get; pipeline_result = True; end
+                FAdd:   begin {out, exc} <- float_add.response.get; pipeline_result = True; end
+                FSub:   begin {out, exc} <- float_add.response.get; pipeline_result = True; end
+                FMul:   begin {out, exc} <- float_mult.response.get; pipeline_result = True; end
+                FDiv:   begin {out, exc} <- float_div.response.get; pipeline_result = True; end
+                FSqrt:  begin {out, exc} <- float_sqrt.response.get; pipeline_result = True; end
+                FMAdd:  begin {out, exc} <- float_fma.response.get; pipeline_result = True; end
+                FMSub:  begin {out, exc} <- float_fma.response.get; pipeline_result = True; end
                 FNMSub: begin {out, exc} <- float_fma.response.get; out = -out; pipeline_result = True; end
                 FNMAdd: begin {out, exc} <- float_fma.response.get; out = -out; pipeline_result = True; end
             endcase
@@ -838,13 +838,13 @@ module mkFpuExecPipeline(FpuExec);
             // Fpu Decoding
             case (fpu_f)
                 // pipeline instructions
-                FAdd:     begin {out, exc} <- double_add.response.get; pipeline_result = True; end
-                FSub:     begin {out, exc} <- double_add.response.get; pipeline_result = True; end
-                FMul:     begin {out, exc} <- double_mult.response.get; pipeline_result = True; end
-                FDiv:     begin {out, exc} <- double_div.response.get; pipeline_result = True; end
-                FSqrt:    begin {out, exc} <- double_sqrt.response.get; pipeline_result = True; end
-                FMAdd:    begin {out, exc} <- double_fma.response.get; pipeline_result = True; end
-                FMSub:    begin {out, exc} <- double_fma.response.get; pipeline_result = True; end
+                FAdd:   begin {out, exc} <- double_add.response.get; pipeline_result = True; end
+                FSub:   begin {out, exc} <- double_add.response.get; pipeline_result = True; end
+                FMul:   begin {out, exc} <- double_mult.response.get; pipeline_result = True; end
+                FDiv:   begin {out, exc} <- double_div.response.get; pipeline_result = True; end
+                FSqrt:  begin {out, exc} <- double_sqrt.response.get; pipeline_result = True; end
+                FMAdd:  begin {out, exc} <- double_fma.response.get; pipeline_result = True; end
+                FMSub:  begin {out, exc} <- double_fma.response.get; pipeline_result = True; end
                 FNMSub: begin {out, exc} <- double_fma.response.get; out = -out; pipeline_result = True; end
                 FNMAdd: begin {out, exc} <- double_fma.response.get; out = -out; pipeline_result = True; end
             endcase
@@ -862,12 +862,12 @@ module mkFpuExecPipeline(FpuExec);
     method Action exec(FpuInst fpu_inst, RVRoundMode rm, Data rVal1, Data rVal2, Data rVal3);
         // Convert the Risc-V RVRoundMode to FloatingPoint::RoundMode
         RoundMode fpu_rm = (case (rm)
-                RNE:            Rnd_Nearest_Even;
-                RTZ:            Rnd_Zero;
-                RDN:            Rnd_Minus_Inf;
-                RUP:            Rnd_Plus_Inf;
-                RMM:            Rnd_Nearest_Away_Zero;
-                RDyn:         Rnd_Nearest_Even;
+                RNE:        Rnd_Nearest_Even;
+                RTZ:        Rnd_Zero;
+                RDN:        Rnd_Minus_Inf;
+                RUP:        Rnd_Plus_Inf;
+                RMM:        Rnd_Nearest_Away_Zero;
+                RDyn:       Rnd_Nearest_Even;
                 default:    Rnd_Nearest_Even;
             endcase);
 
@@ -885,13 +885,13 @@ module mkFpuExecPipeline(FpuExec);
             // Fpu Decoding
             case (fpu_f)
                 // pipeline instructions
-                FAdd:     float_add.request.put(tuple3(in1, in2, fpu_rm));
-                FSub:     float_add.request.put(tuple3(in1, -in2, fpu_rm));
-                FMul:     float_mult.request.put(tuple3(in1, in2, fpu_rm));
-                FDiv:     float_div.request.put(tuple3(in1, in2, fpu_rm));
-                FSqrt:    float_sqrt.request.put(tuple2(in1, fpu_rm));
-                FMAdd:    float_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
-                FMSub:    float_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
+                FAdd:   float_add.request.put(tuple3(in1, in2, fpu_rm));
+                FSub:   float_add.request.put(tuple3(in1, -in2, fpu_rm));
+                FMul:   float_mult.request.put(tuple3(in1, in2, fpu_rm));
+                FDiv:   float_div.request.put(tuple3(in1, in2, fpu_rm));
+                FSqrt:  float_sqrt.request.put(tuple2(in1, fpu_rm));
+                FMAdd:  float_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
+                FMSub:  float_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
                 FNMSub: float_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
                 FNMAdd: float_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
             endcase
@@ -907,13 +907,13 @@ module mkFpuExecPipeline(FpuExec);
             // Fpu Decoding
             case (fpu_f)
                 // pipeline instructions
-                FAdd:     double_add.request.put(tuple3(in1, in2, fpu_rm));
-                FSub:     double_add.request.put(tuple3(in1, -in2, fpu_rm));
-                FMul:     double_mult.request.put(tuple3(in1, in2, fpu_rm));
-                FDiv:     double_div.request.put(tuple3(in1, in2, fpu_rm));
-                FSqrt:    double_sqrt.request.put(tuple2(in1, fpu_rm));
-                FMAdd:    double_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
-                FMSub:    double_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
+                FAdd:   double_add.request.put(tuple3(in1, in2, fpu_rm));
+                FSub:   double_add.request.put(tuple3(in1, -in2, fpu_rm));
+                FMul:   double_mult.request.put(tuple3(in1, in2, fpu_rm));
+                FDiv:   double_div.request.put(tuple3(in1, in2, fpu_rm));
+                FSqrt:  double_sqrt.request.put(tuple2(in1, fpu_rm));
+                FMAdd:  double_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
+                FMSub:  double_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
                 FNMSub: double_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
                 FNMAdd: double_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
             endcase

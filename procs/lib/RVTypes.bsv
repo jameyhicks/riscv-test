@@ -620,8 +620,8 @@ typedef enum {
     Lui   = 5'b11000
 } AluFunc deriving (Bits, Eq, FShow);
 typedef struct {
-    AluFunc             op;
-    Bool                w;
+    AluFunc op;
+    Bool    w;
 } AluInst deriving (Bits, Eq, FShow);
 
 typedef enum {
@@ -839,11 +839,11 @@ function FullResult toFullResult(t x) provisos (FullResultSubset#(t));
 endfunction
 
 typedef struct {
-  Bit#(2) prv;
-  Asid    asid;
-  Bit#(5) vm;
-  Addr    base;
-  Addr    bound;
+    Bit#(2) prv;
+    Asid    asid;
+    Bit#(5) vm;
+    Addr    base;
+    Addr    bound;
 } VMInfo deriving (Bits, Eq, FShow);
 instance DefaultValue#(VMInfo);
     function VMInfo defaultValue = VMInfo {prv: prvM, asid: 0, vm: 0, base: 0, bound: 0};
@@ -879,95 +879,95 @@ Bit#(5) vmSv57  = 11;
 Bit#(5) vmSv64  = 12;
 
 typedef struct {
-  Bit#(16) reserved;
-  Bit#(20) ppn2;
-  Bit#(9) ppn1;
-  Bit#(9) ppn0;
-  Bit#(3) reserved_sw;
-  Bool d;
-  Bool r;
-  PTE_Type pte_type;
-  Bool valid;
+    Bit#(16) reserved;
+    Bit#(20) ppn2;
+    Bit#(9) ppn1;
+    Bit#(9) ppn0;
+    Bit#(3) reserved_sw;
+    Bool d;
+    Bool r;
+    PTE_Type pte_type;
+    Bool valid;
 } PTE_Sv39 deriving (Eq, FShow); // Has custom Bits implementation
 typedef struct {
-  Bool global;
-  Bool s_r;
-  Bool s_w;
-  Bool s_x;
-  Bool u_r;
-  Bool u_w;
-  Bool u_x;
+    Bool global;
+    Bool s_r;
+    Bool s_w;
+    Bool s_x;
+    Bool u_r;
+    Bool u_w;
+    Bool u_x;
 } PTE_Type deriving (Eq, FShow);
 function Bool is_leaf_pte_type(PTE_Type pte_type) = pte_type.s_r;
 instance Bits#(PTE_Type, 4);
-  function Bit#(4) pack(PTE_Type x);
-    Bit#(7) bitvec = {pack(x.global), pack(x.s_r), pack(x.s_w), pack(x.s_x), pack(x.u_r), pack(x.u_w), pack(x.u_x)};
-    return (case (bitvec)
-        7'b0000000: 0;
-        7'b1000000: 1;
-        7'b0100101: 2;
-        7'b0110111: 3;
-        7'b0100100: 4;
-        7'b0110110: 5;
-        7'b0101101: 6;
-        7'b0111111: 7;
-        7'b0100000: 8;
-        7'b0110000: 9;
-        7'b0101000: 10;
-        7'b0111000: 11;
-        7'b1100000: 12;
-        7'b1110000: 13;
-        7'b1101000: 14;
-        7'b1111000: 15;
-        default:    ?;
-      endcase);
-  endfunction
-  function PTE_Type unpack(Bit#(4) x);
-    Bit#(7) bitvec = (case (x)
-        0:  7'b0000000;
-        1:  7'b1000000;
-        2:  7'b0100101;
-        3:  7'b0110111;
-        4:  7'b0100100;
-        5:  7'b0110110;
-        6:  7'b0101101;
-        7:  7'b0111111;
-        8:  7'b0100000;
-        9:  7'b0110000;
-        10: 7'b0101000;
-        11: 7'b0111000;
-        12: 7'b1100000;
-        13: 7'b1110000;
-        14: 7'b1101000;
-        15: 7'b1111000;
-      endcase);
-    return (PTE_Type {
-        global: unpack(bitvec[6]),
-        s_r:    unpack(bitvec[5]),
-        s_w:    unpack(bitvec[4]),
-        s_x:    unpack(bitvec[3]),
-        u_r:    unpack(bitvec[2]),
-        u_w:    unpack(bitvec[1]),
-        u_x:    unpack(bitvec[0])
-      });
-  endfunction
+    function Bit#(4) pack(PTE_Type x);
+        Bit#(7) bitvec = {pack(x.global), pack(x.s_r), pack(x.s_w), pack(x.s_x), pack(x.u_r), pack(x.u_w), pack(x.u_x)};
+        return (case (bitvec)
+                7'b0000000: 0;
+                7'b1000000: 1;
+                7'b0100101: 2;
+                7'b0110111: 3;
+                7'b0100100: 4;
+                7'b0110110: 5;
+                7'b0101101: 6;
+                7'b0111111: 7;
+                7'b0100000: 8;
+                7'b0110000: 9;
+                7'b0101000: 10;
+                7'b0111000: 11;
+                7'b1100000: 12;
+                7'b1110000: 13;
+                7'b1101000: 14;
+                7'b1111000: 15;
+                default:    ?;
+            endcase);
+    endfunction
+    function PTE_Type unpack(Bit#(4) x);
+        Bit#(7) bitvec = (case (x)
+                0:  7'b0000000;
+                1:  7'b1000000;
+                2:  7'b0100101;
+                3:  7'b0110111;
+                4:  7'b0100100;
+                5:  7'b0110110;
+                6:  7'b0101101;
+                7:  7'b0111111;
+                8:  7'b0100000;
+                9:  7'b0110000;
+                10: 7'b0101000;
+                11: 7'b0111000;
+                12: 7'b1100000;
+                13: 7'b1110000;
+                14: 7'b1101000;
+                15: 7'b1111000;
+            endcase);
+        return (PTE_Type {
+                global: unpack(bitvec[6]),
+                s_r:    unpack(bitvec[5]),
+                s_w:    unpack(bitvec[4]),
+                s_x:    unpack(bitvec[3]),
+                u_r:    unpack(bitvec[2]),
+                u_w:    unpack(bitvec[1]),
+                u_x:    unpack(bitvec[0])
+            });
+    endfunction
 endinstance
 instance Bits#(PTE_Sv39, 64);
-  function Bit#(64) pack(PTE_Sv39 x);
-    return {x.reserved, x.ppn2, x.ppn1, x.ppn0, x.reserved_sw, pack(x.d), pack(x.r), pack(x.pte_type), pack(x.valid)};
-  endfunction
-  function PTE_Sv39 unpack(Bit#(64) x);
-    return (PTE_Sv39 {
-        reserved:     x[63:48],
-        ppn2:         x[47:28],
-        ppn1:         x[27:19],
-        ppn0:         x[18:10],
-        reserved_sw:  x[9:7],
-        d:            unpack(x[6]),
-        r:            unpack(x[5]),
-        pte_type:     unpack(x[4:1]),
-        valid:        unpack(x[0])
-      });
-  endfunction
+    function Bit#(64) pack(PTE_Sv39 x);
+        return {x.reserved, x.ppn2, x.ppn1, x.ppn0, x.reserved_sw, pack(x.d), pack(x.r), pack(x.pte_type), pack(x.valid)};
+    endfunction
+    function PTE_Sv39 unpack(Bit#(64) x);
+        return (PTE_Sv39 {
+                reserved:     x[63:48],
+                ppn2:         x[47:28],
+                ppn1:         x[27:19],
+                ppn0:         x[18:10],
+                reserved_sw:  x[9:7],
+                d:            unpack(x[6]),
+                r:            unpack(x[5]),
+                pte_type:     unpack(x[4:1]),
+                valid:        unpack(x[0])
+            });
+    endfunction
 endinstance
 
