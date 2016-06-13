@@ -7,3 +7,6 @@
 [submodule "fpgamake"]
 	path = fpgamake
 	url = https://github.com/cambridgehackers/fpgamake.git
+[submodule "codegen/riscv-meta"]
+	path = codegen/riscv-meta
+	url = https://github.com/michaeljclark/riscv-meta.git
