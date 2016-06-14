@@ -37,6 +37,9 @@ def parse_instructions(meta):
     codecs = list(map( lambda x : x[0], meta['codecs'] ))
     parsed_insts = []
 
+    # TODO: remove this when we switch to v1.9 of the supervisor spec
+    parsed_insts.append(('mrts', "32'b00110000010100000000000001110011", [], ['rv32s', 'rv64s']))
+
     for instline in meta['opcodes']:
         # initial values
         inst_args = []
