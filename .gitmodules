@@ -10,3 +10,6 @@
 [submodule "codegen/riscv-meta"]
 	path = codegen/riscv-meta
 	url = https://github.com/michaeljclark/riscv-meta.git
+[submodule "buildcache"]
+	path = buildcache
+	url = https://github.com/cambridgehackers/buildcache.git
