@@ -38,7 +38,7 @@ case "$OPTION" in
        ;;
     6) files=$RISCV/riscv64-unknown-elf/share/riscv-tests/isa/rv64mi-p-dirty
        ;;
-    7) $RUNEXE +ramdisk=$RISCV_HOME/root.bin $RISCV/riscv64-unknown-elf/bin/bbl $RISCV_HOME/linux-4.1.17/vmlinux > out/linux.out
+    7) $RUNEXE +ramdisk=$RISCV_HOME/root.bin $RISCV/riscv64-unknown-elf/bin/bbl $RISCV_HOME/vmlinux > out/linux.out
        files=
        ;;
     *) echo "Invalid Test Code"
