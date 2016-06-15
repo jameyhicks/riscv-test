@@ -19,6 +19,7 @@ typedef struct {
     Data    data;
     Bit#(5) fflags;
 } FpuResult deriving(Bits, Eq, FShow);
+
 instance FullResultSubset#(FpuResult);
     function FullResult updateFullResult(FpuResult x, FullResult full_result);
         full_result.data = x.data;
@@ -35,6 +36,8 @@ interface FpuExec;
     method FpuResult    result_data;
     method Action       result_deq;
 endinterface
+
+`ifndef USE_DUMMY_FPU
 
 function Tuple2#(FloatingPoint#(e,m), Exception) fmaFP(FloatingPoint#(e,m) in1, FloatingPoint#(e,m) in2, FloatingPoint#(e,m) in3, RoundMode rmode)
         provisos (Add#(a__, TLog#(TAdd#(1, TAdd#(m, 5))), TAdd#(e, 1)),
@@ -61,13 +64,13 @@ endmodule
 `endif
 (* synthesize *)
 module mkDoubleDiv(Server#(Tuple3#(Double, Double, RoundMode), Tuple2#(Double, Exception)));
-    let int_div <- mkDivider(1);
+    let int_div <- mkDivider(2);
     let fpu <- mkFloatingPointDivider(int_div);
     return fpu;
 endmodule
 (* synthesize *)
 module mkDoubleSqrt(Server#(Tuple2#(Double, RoundMode), Tuple2#(Double, Exception)));
-    let int_sqrt <- mkSquareRooter(1);
+    let int_sqrt <- mkSquareRooter(3);
     let fpu <- mkFloatingPointSquareRooter(int_sqrt);
     return fpu;
 endmodule
@@ -90,13 +93,13 @@ module mkFloatMult(Server#(Tuple3#(Float, Float, RoundMode), Tuple2#(Float, Exce
 endmodule
 // (* synthesize *)
 module mkFloatDiv(Server#(Tuple3#(Float, Float, RoundMode), Tuple2#(Float, Exception)));
-    let int_div <- mkDivider(1);
+    let int_div <- mkDivider(2);
     let fpu <- mkFloatingPointDivider(int_div);
     return fpu;
 endmodule
 // (* synthesize *)
 module mkFloatSqrt(Server#(Tuple2#(Float, RoundMode), Tuple2#(Float, Exception)));
-    let int_sqrt <- mkSquareRooter(1);
+    let int_sqrt <- mkSquareRooter(3);
     let fpu <- mkFloatingPointSquareRooter(int_sqrt);
     return fpu;
 endmodule
@@ -929,8 +932,10 @@ module mkFpuExecPipeline(FpuExec);
     method Action     result_deq = fpu_exec_fifo_out.deq;
 endmodule
 
+`else
+
 (* synthesize *)
-module mkFpuExecDummy(FpuExec);
+module mkFpuExecPipeline(FpuExec);
     FIFOF#(FpuResult) fpu_exec_fifo <- mkFIFOF;
 
     method Action exec(FpuInst fpu_inst, RVRoundMode rm, Data rVal1, Data rVal2, Data rVal3);
@@ -947,3 +952,5 @@ module mkFpuExecDummy(FpuExec);
     method FpuResult result_data = fpu_exec_fifo.first;
     method Action     result_deq = fpu_exec_fifo.deq;
 endmodule
+
+`endif

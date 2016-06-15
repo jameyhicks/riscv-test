@@ -5,6 +5,7 @@
 `define a True
 `define f True
 `define d True
+// `define USE_DUMMY_FPU
 
 // Set this define to use the FMA for Add and Mul
 `define REUSE_FMA
