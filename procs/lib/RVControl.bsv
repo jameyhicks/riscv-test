@@ -26,11 +26,18 @@ endfunction
 
 (* noinline *)
 function Addr brAddrCalc(BrFunc brFunc, Addr pc, Data val, Data imm);
-    Addr targetAddr = (case (brFunc)
-            Jal:        (pc + imm);
-            Jalr:       {(val + imm)[valueOf(AddrSz)-1:1], 1'b0};
-            default:    (pc + imm);
-        endcase);
+    Data in1 = (brFunc == Jalr) ? val : pc;
+    Data addOut = in1 + imm;
+    // if JALR, zero LSB
+    Data targetAddr = (brFunc == Jalr) ? (addOut & (~1)) : addOut;
     return targetAddr;
+
+    // XXX: Old implementation
+    // Addr targetAddr = (case (brFunc)
+    //         Jal:        (pc + imm);
+    //         Jalr:       {(val + imm)[valueOf(AddrSz)-1:1], 1'b0};
+    //         default:    (pc + imm);
+    //     endcase);
+    // return targetAddr;
 endfunction
 
