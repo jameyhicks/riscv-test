@@ -65,11 +65,6 @@ module mkMulticycleBackEnd(BackEnd#(void));
 
     FIFO#(VerificationPacket) verificationPackets <- mkFIFO;
 
-    // performance counters
-    PerfCounter loadCounter <- mkPerfCounter("loads");
-    PerfCounter storeCounter <- mkPerfCounter("stores");
-    PerfCounter dataFaultCounter <- mkPerfCounter("data-faults");
-
     rule doRegRead(!htifStall && state == RegRead);
         rVal1 <= rf.rd1(fromMaybe(Gpr, dInst.rs1), getInstFields(inst).rs1);
         rVal2 <= rf.rd2(fromMaybe(Gpr, dInst.rs2), getInstFields(inst).rs2);
