@@ -1,7 +1,3 @@
-// `include "PerfMonitor.defines"
-import PerfMonitor::*;
-import ModuleContext::*;
-
 import ClientServer::*;
 import DefaultValue::*;
 import FIFO::*;
@@ -19,20 +15,8 @@ typedef enum {
     Send
 } FEState deriving (Bits, Eq, FShow);
 
-// (* synthesize *)
-// module `mkPerfModule("FrontEnd", mkMulticycleFrontEnd, FrontEnd#(void));
 (* synthesize *)
-module [Module] mkMulticycleFrontEndV(Tuple2#(PerfMonitor, FrontEnd#(void)));
-    (* hide *)
-    let _m <- toSynthBoundary("FrontEnd", mkMulticycleFrontEnd0);
-    return _m;
-endmodule
-module [m] mkMulticycleFrontEnd(FrontEnd#(void)) provisos (HasPerfCounters#(m));
-    (* hide *)
-    let _m <- fromSynthBoundary("FrontEnd", mkMulticycleFrontEndV);
-    return _m;
-endmodule
-module [m] mkMulticycleFrontEnd0(FrontEnd#(void)) provisos (HasPerfCounters#(m));
+module mkMulticycleFrontEnd(FrontEnd#(void));
     Bool verbose = False;
     File fout = stdout;
 
@@ -52,14 +36,6 @@ module [m] mkMulticycleFrontEnd0(FrontEnd#(void)) provisos (HasPerfCounters#(m))
     FIFO#(RVIMemResp)   memResp <- mkFIFO;
 
     FIFO#(FrontEndToBackEnd#(void)) toBackEnd <- mkFIFO;
-
-    // Performance Counters
-    PerfCounter fetchCounter <- mkPerfCounter("fetches");
-    PerfCounter fetchFaultCounter <- mkPerfCounter("fetch-faults");
-    PerfCounter cycleCounter <- mkPerfCounter("cycles");
-    rule incrementCycleCounter;
-        cycleCounter.increment(1);
-    endrule
 
     rule doInstMMU(running && state == IMMU);
         // request address translation from MMU
@@ -83,13 +59,11 @@ module [m] mkMulticycleFrontEnd0(FrontEnd#(void)) provisos (HasPerfCounters#(m))
         if (!isValid(exMMU)) begin
             // no translation exception
             memReq.enq(phyPc);
-            fetchCounter.increment(1);
             // go to decode stage
             state <= Dec;
         end else begin
             // translation exception (instruction access fault)
             exception <= exMMU;
-            fetchFaultCounter.increment(1);
             // send instruction to backend
             state <= Send;
         end

@@ -1,6 +1,8 @@
 import ClientServer::*;
+import Connectable::*;
 import DefaultValue::*;
 import FIFO::*;
+import GetPut::*;
 import Vector::*;
 
 import Abstraction::*;
@@ -17,63 +19,147 @@ import RVControl::*;
 import RVDecode::*;
 import RVMemory::*;
 
+// This interface is the combination of FrontEnd and BackEnd
+interface Core;
+    method Action start(Addr startPc);
+    method Action stop;
+
+    method Action configure(Data miobase);
+    method ActionValue#(VerificationPacket) getVerificationPacket;
+    method ActionValue#(VMInfo) updateVMInfoI;
+    method ActionValue#(VMInfo) updateVMInfoD;
+
+    interface Client#(RVIMMUReq, RVIMMUResp) ivat;
+    interface Client#(RVIMemReq, RVIMemResp) ifetch;
+    interface Client#(RVDMMUReq, RVDMMUResp) dvat;
+    interface Client#(RVDMemReq, RVDMemResp) dmem;
+    interface Client#(FenceReq, FenceResp) fence;
+    interface Client#(Data, Data) htif;
+endinterface
+
+instance Connectable#(Core, MemorySystem);
+    module mkConnection#(Core core, MemorySystem mem)(Empty);
+        mkConnection(core.ivat, mem.ivat);
+        mkConnection(core.ifetch, mem.ifetch);
+        mkConnection(core.dvat, mem.dvat);
+        mkConnection(core.dmem, mem.dmem);
+        mkConnection(core.fence, mem.fence);
+        mkConnection(toGet(core.updateVMInfoI), toPut(mem.updateVMInfoI));
+        mkConnection(toGet(core.updateVMInfoD), toPut(mem.updateVMInfoD));
+    endmodule
+endinstance
+
 typedef enum {
     Wait,
+    IMMU,
+    IF,
+    Dec,
     RegRead,
     Execute,
     Mem,
     WB,
     Trap,
     Trap2
-} BEState deriving (Bits, Eq, FShow);
+} ProcState deriving (Bits, Eq, FShow);
 
 (* synthesize *)
-module mkMulticycleBackEnd(BackEnd#(void));
+module mkMulticycleCore(Core);
     let verbose = False;
     File fout = stdout;
-
-    Reg#(Bool) htifStall <- mkReg(False);
-
-    Reg#(Addr) pc <- mkReg(0);
-    Reg#(Instruction) inst <- mkReg(0);
-    Reg#(Maybe#(ExceptionCause)) exception <- mkReg(tagged Invalid);
-    Reg#(RVDecodedInst) dInst <- mkReg(unpack(0));
-    Reg#(BEState) state <- mkReg(Wait);
-    Reg#(Data) rVal1 <- mkReg(0);
-    Reg#(Data) rVal2 <- mkReg(0);
-    Reg#(Data) rVal3 <- mkReg(0);
-    Reg#(Data) data <- mkReg(0);
-    Reg#(Data) addr <- mkReg(0);
-    Reg#(Data) nextPc <- mkReg(0);
 
     ArchRFile rf <- mkArchRFile;
     RVCsrFile csrf <- mkRVCsrFile;
     MulDivExec mulDiv <- mkBoothRoughMulDivExec;
     FpuExec fpu <- mkFpuExecPipeline;
 
-    FIFO#(FrontEndToBackEnd#(void)) toBackEnd <- mkFIFO;
-    FIFO#(Redirect#(void)) redirect <- mkFIFO;
+    Reg#(Bool) htifStall <- mkReg(False);
+    Reg#(Bool) running <- mkReg(False);
+    Reg#(ProcState) state <- mkReg(Wait);
 
-    FIFO#(RVDMMUReq)    mmuReq <- mkFIFO;
-    FIFO#(RVDMMUResp)   mmuResp <- mkFIFO;
+    Reg#(Addr) pc <- mkReg(0);
+    Reg#(Maybe#(ExceptionCause)) exception <- mkReg(tagged Invalid);
+    Reg#(Instruction) inst <- mkReg(0);
+    Reg#(RVDecodedInst) dInst <- mkReg(unpack(0));
+    Reg#(FrontEndCsrs) csrState <- mkReadOnlyReg( FrontEndCsrs { vmI: csrf.vmI, state: csrf.csrState } );
 
-    FIFO#(RVDMemReq)    memReq <- mkFIFO;
-    FIFO#(RVDMemResp)   memResp <- mkFIFO;
+    FIFO#(RVIMMUReq)    immuReq <- mkFIFO1;
+    FIFO#(RVIMMUResp)   immuResp <- mkFIFO1;
 
-    FIFO#(Data)         toHost <- mkFIFO;
-    FIFO#(Data)         fromHost <- mkFIFO;
+    FIFO#(RVIMemReq)    imemReq <- mkFIFO1;
+    FIFO#(RVIMemResp)   imemResp <- mkFIFO1;
 
-    FIFO#(VerificationPacket) verificationPackets <- mkFIFO;
+    Reg#(Data) rVal1 <- mkReg(0);
+    Reg#(Data) rVal2 <- mkReg(0);
+    Reg#(Data) rVal3 <- mkReadOnlyReg(0);
+    Reg#(Data) data <- mkReg(0);
+    Reg#(Data) addr <- mkReg(0);
+    Reg#(Data) nextPc <- mkReg(0);
 
-    // performance counters
-    PerfCounter loadCounter <- mkPerfCounter("loads");
-    PerfCounter storeCounter <- mkPerfCounter("stores");
-    PerfCounter dataFaultCounter <- mkPerfCounter("data-faults");
+    FIFO#(RVDMMUReq)    dmmuReq <- mkFIFO1;
+    FIFO#(RVDMMUResp)   dmmuResp <- mkFIFO1;
+
+    FIFO#(RVDMemReq)    dmemReq <- mkFIFO1;
+    FIFO#(RVDMemResp)   dmemResp <- mkFIFO1;
+
+    FIFO#(Data)         toHost <- mkFIFO1;
+    FIFO#(Data)         fromHost <- mkFIFO1;
+
+    FIFO#(VerificationPacket) verificationPackets <- mkFIFO1;
+
+    rule doInstMMU(running && state == IMMU);
+        // request address translation from MMU
+        immuReq.enq(pc);
+        // reset states
+        inst <= unpack(0);
+        dInst <= unpack(0);
+        exception <= tagged Invalid;
+        // go to InstFetch stage
+        state <= IF;
+    endrule
+
+    rule doInstFetch(state == IF);
+        // I wanted notation like this:
+        // let {addr: .phyPc, exception: .exMMU} = mmuResp.first;
+
+        let phyPc = immuResp.first.addr;
+        let exMMU = immuResp.first.exception;
+        immuResp.deq;
+
+        if (!isValid(exMMU)) begin
+            // no translation exception
+            imemReq.enq(phyPc);
+            // go to decode stage
+            state <= Dec;
+        end else begin
+            // translation exception (instruction access fault)
+            exception <= exMMU;
+            // send instruction to backend
+            state <= Trap;
+        end
+    endrule
+
+    rule doDecode(state == Dec);
+        let fInst = imemResp.first;
+        imemResp.deq;
+
+        let decInst = decodeInst(fInst);
+
+        if (decInst matches tagged Valid .validDInst) begin
+            // Legal instruction
+            dInst <= validDInst;
+        end else begin
+            // Illegal instruction
+            exception <= tagged Valid IllegalInst;
+        end
+
+        inst <= fInst;
+        state <= isValid(decInst) ? RegRead : Trap;
+    endrule
 
     rule doRegRead(!htifStall && state == RegRead);
         rVal1 <= rf.rd1(fromMaybe(Gpr, dInst.rs1), getInstFields(inst).rs1);
         rVal2 <= rf.rd2(fromMaybe(Gpr, dInst.rs2), getInstFields(inst).rs2);
-        rVal3 <= rf.rd3(fromMaybe(Gpr, dInst.rs3), getInstFields(inst).rs3);
+        // rVal3 <= rf.rd3(fromMaybe(Gpr, dInst.rs3), getInstFields(inst).rs3);
         state <= Execute;
     endrule
 
@@ -99,7 +185,7 @@ module mkMulticycleBackEnd(BackEnd#(void));
                     // data for store and AMO
                     dataEx = rVal2;
                     addrEx = addrCalc(rVal1, imm);
-                    mmuReq.enq(RVDMMUReq {addr: addrEx, size: memInst.size, op: (memInst.op matches tagged Mem .memOp ? memOp : St)});
+                    dmmuReq.enq(RVDMMUReq {addr: addrEx, size: memInst.size, op: (memInst.op matches tagged Mem .memOp ? memOp : St)});
                 end
             tagged MulDiv .mulDivInst: mulDiv.exec(mulDivInst, rVal1, rVal2);
             tagged Fence  .fenceInst:  noAction;
@@ -120,13 +206,13 @@ module mkMulticycleBackEnd(BackEnd#(void));
     endrule
 
     rule doMem(state == Mem);
-        let pAddr = mmuResp.first.addr;
-        let exMMU = mmuResp.first.exception;
-        mmuResp.deq;
+        let pAddr = dmmuResp.first.addr;
+        let exMMU = dmmuResp.first.exception;
+        dmmuResp.deq;
 
         // TODO: make this type safe! get rid of .Mem accesses to tagged union
         if (!isValid(exMMU)) begin
-            memReq.enq( RVDMemReq {
+            dmemReq.enq( RVDMemReq {
                     op: dInst.execFunc.Mem.op,
                     byteEn: toByteEn(dInst.execFunc.Mem.size),
                     addr: pAddr,
@@ -160,8 +246,8 @@ module mkMulticycleBackEnd(BackEnd#(void));
             tagged Mem .memInst:
                 begin
                     if (getsResponse(memInst.op)) begin
-                        dataWb = memResp.first;
-                        memResp.deq;
+                        dataWb = dmemResp.first;
+                        dmemResp.deq;
                     end
                 end
         endcase
@@ -211,11 +297,8 @@ module mkMulticycleBackEnd(BackEnd#(void));
                 rf.wr(dstRegType, getInstFields(inst).rd, fromMaybe(dataWb, maybeData));
             end
             // always redirect
-            redirect.enq( Redirect {
-                    pc: nextPc,
-                    epoch: ?,
-                    frontEndCsrs: FrontEndCsrs { vmI: csrf.vmI, state: csrf.csrState } } );
-            state <= Wait;
+            pc <= nextPc;
+            state <= IMMU;
         end
     endrule
 
@@ -249,19 +332,14 @@ module mkMulticycleBackEnd(BackEnd#(void));
 
         // redirection will happpen in trap2
         // by construction maybeNextPc is always valid
-        nextPc <= fromMaybe(?, maybeNextPc);
+        nextPc <= fromMaybe(nextPc, maybeNextPc);
         state <= Trap2;
     endrule
 
     // There is a second trap state to ensure that the frontEndCsrs reflect the updated state of the processor
     rule doTrap2(state == Trap2);
-        redirect.enq( Redirect {
-            pc: nextPc,
-            epoch: ?,
-            frontEndCsrs: FrontEndCsrs { vmI: csrf.vmI, state: csrf.csrState }
-        } );
-
-        state <= Wait;
+        pc <= nextPc;
+        state <= IMMU;
     endrule
 
     rule htifToHost;
@@ -279,25 +357,23 @@ module mkMulticycleBackEnd(BackEnd#(void));
         csrf.hostToCsrf(msg);
     endrule
 
-    method Action instFromFrontEnd(FrontEndToBackEnd#(void) x) if (state == Wait);
-        if (verbose) $fdisplay(fout, "[backend] receiving instruction for pc: 0x%08x - intruction: 0x%08x - dInst: ", x.pc, x.inst, fshow(x.dInst));
-        pc <= x.pc;
-        inst <= x.inst;
-        dInst <= x.dInst;
-        exception <= x.cause;
-        state <= isValid(x.cause) ? Trap : RegRead;
+    interface Client ivat = toGPClient(immuReq, immuResp);
+    interface Client ifetch = toGPClient(imemReq, imemResp);
+
+    method Action start(Addr startPc);
+        running <= True;
+        pc <= startPc;
+        state <= IMMU;
+        csrState <= defaultValue;
+        if (verbose) $fdisplay(fout, "[frontend] starting from pc = 0x%08x", startPc);
     endmethod
-    method ActionValue#(Redirect#(void)) getRedirect;
-        if (verbose) $fdisplay(fout, "[backend] sending redirecting to 0x%08x", redirect.first.pc);
-        redirect.deq;
-        return redirect.first;
-    endmethod
-    method ActionValue#(TrainingData) getTrain if (False);
-        return ?;
+    method Action stop;
+        running <= False;
+        state <= Wait;
     endmethod
 
-    interface Client dvat = toGPClient(mmuReq, mmuResp);
-    interface Client dmem = toGPClient(memReq, memResp);
+    interface Client dvat = toGPClient(dmmuReq, dmmuResp);
+    interface Client dmem = toGPClient(dmemReq, dmemResp);
     interface Client htif = toGPClient(toHost, fromHost);
 
     method Action configure(Data miobase);

@@ -11,8 +11,7 @@ import VerificationPacket::*;
 import VerificationPacketFilter::*;
 
 import Abstraction::*;
-import FrontEnd::*;
-import BackEnd::*;
+import Core::*;
 import MemorySystem::*;
 
 interface Proc;
@@ -32,37 +31,37 @@ interface Proc;
     interface MainMemoryClient#(MemoryClientType) mainMemory;
 endinterface
 
+// (* synthesize *)
+// module `mkPerfModule("Proc", mkProc, Proc);
+
 (* synthesize *)
 module mkProc(Proc);
-    FrontEnd#(void) frontend <- mkMulticycleFrontEnd;
-    BackEnd#(void) backend <- mkMulticycleBackEnd;
+    Core core <- mkMulticycleCore;
     SingleCoreMemorySystem memorySystem <- mkBasicMemorySystem;
 
-    // +-------+ +------+ +---------------+
-    // | front |-| back | | verification  |
-    // |  end  |=| end  |-| packet filter |
-    // +-------+ +------+ +---------------+
+    // +----------------+ +---------------+
+    // |      Core      | | verification  |
+    // |                |-| packet filter |
+    // +----------------+ +---------------+
     //   || ||    || |||
     // +----------------+
     // | memory system  |
     // +----------------+
 
-    let front_to_back <- mkConnection(frontend, backend);
-    let fron_to_mem <- mkConnection(frontend, memorySystem.core[0]);
-    let back_to_mem <- mkConnection(backend, memorySystem.core[0]);
+    let core_to_mem <- mkConnection(core, memorySystem.core[0]);
 
-    VerificationPacketFilter verificationPacketFilter <- mkVerificationPacketFilter(backend.getVerificationPacket);
+    VerificationPacketFilter verificationPacketFilter <- mkVerificationPacketFilter(core.getVerificationPacket);
 
     // Processor Control
     method Action start(Bit#(64) startPc, Bit#(64) verificationPacketsToIgnore, Bool sendSynchronizationPackets);
-        frontend.start(startPc);
+        core.start(startPc);
         verificationPacketFilter.init(verificationPacketsToIgnore, sendSynchronizationPackets);
     endmethod
     method Action stop();
-        frontend.stop;
+        core.stop;
     endmethod
     method Action configure(Data miobase);
-        backend.configure(miobase);
+        core.configure(miobase);
     endmethod
 
     // Verification
@@ -74,10 +73,10 @@ module mkProc(Proc);
     // HTIF
     method Action fromHost(Bit#(64) v);
         // $fdisplay(stderr, "[PROC] fromHost: 0x%08x", v);
-        backend.htif.response.put(v);
+        core.htif.response.put(v);
     endmethod
     method ActionValue#(Bit#(64)) toHost;
-        let msg <- backend.htif.request.get;
+        let msg <- core.htif.request.get;
         // $fdisplay(stderr, "[PROC] toHost: 0x%08x", msg);
         return msg;
     endmethod
