@@ -159,7 +159,7 @@ module mkMulticycleCore(Core);
     rule doRegRead(!htifStall && state == RegRead);
         rVal1 <= rf.rd1(fromMaybe(Gpr, dInst.rs1), getInstFields(inst).rs1);
         rVal2 <= rf.rd2(fromMaybe(Gpr, dInst.rs2), getInstFields(inst).rs2);
-        // rVal3 <= rf.rd3(fromMaybe(Gpr, dInst.rs3), getInstFields(inst).rs3);
+        rVal3 <= rf.rd3(fromMaybe(Gpr, dInst.rs3), getInstFields(inst).rs3);
         state <= Execute;
     endrule
 
