@@ -15,8 +15,10 @@ What do we need to do:
 * [bug] htifStall causes a problem with typing and printing at the same time
 * Change RISCV_HOME to RISCY_HOME
 * Separate code that is specific to connectal back-end
-* Link performance counter txt file with android.exe so you don't have to copy
-  over the txt file to the FPGA
+* Perf counters:
+    - Add perf counters in a clean way
+    - Link performance counter txt file with android.exe so you don't have to
+      copy over the txt file to the FPGA
 * Improve gitignore to ignore build folders
 * Figure out if this notation can be legal:
     - let {addr: .phyPc, exception: .exMMU} = mmuResp.first;
