@@ -210,7 +210,7 @@ module toInstType_verilog (in, out);
         (rd, rs1, rs2, rs3, imm) = get_inst_types(inst_args)
         if reduce( lambda x, y: x or y, [x == y for x in inst_extension for y in extensions] ):
             decoder = decoder + '            %-16sInstType{rs1: %s, rs2: %s, rs3: %s, dst: %s, imm: %-4s};\n' % ('`' + macro_name + ':',rs1,rs2,rs3,rd,imm)
-            macro_definitions = macro_definitions + '`define %s %s\n' % (macro_name, bsv_val)
+            macro_definitions = macro_definitions + '`define %-18s %s\n' % (macro_name, bsv_val)
             defined_macros.append(macro_name)
             # verilog generation
             if rs1 == 'n':
@@ -246,9 +246,10 @@ endmodule
 
     macro_definitions = macro_definitions + '\n// unused macros\n'
     # finish up macro definitions
-    for macro_name in skipped_macros:
-        if macro_name not in defined_macros:
-            macro_definitions = macro_definitions + '`define %s %s\n' % (macro_name, bsv_val)
+    for (inst_name, bsv_val, inst_args, inst_extension) in insts:
+        macro_name = inst_name.replace('.','_').upper()
+        if (macro_name in skipped_macros) and (macro_name not in defined_macros):
+            macro_definitions = macro_definitions + '`define %-18s %s\n' % (macro_name, bsv_val)
             defined_macros.append(macro_name)
 
     with open('Opcodes.bsv', 'w') as f:
