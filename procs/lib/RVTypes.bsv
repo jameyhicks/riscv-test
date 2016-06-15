@@ -714,7 +714,7 @@ typedef enum {
 } RegType deriving (Bits, Eq, FShow);
 
 typedef enum {
-    S, SB, U, UJ, I, Z, None
+    None, I, S, SB, U, UJ, Z
 } ImmType deriving (Bits, Eq, FShow);
 
 typedef struct {
