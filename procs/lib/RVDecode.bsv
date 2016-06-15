@@ -84,14 +84,14 @@ endfunction
 function Maybe#(ExecFunc) toExecFuncSupervisor(Instruction inst);
     InstructionFields instFields = unpack(inst);
     return (case (inst) matches
-            `SCALL:     tagged Valid (tagged System ECall);
-            `SBREAK:    tagged Valid (tagged System EBreak);
+            `ECALL:     tagged Valid (tagged System ECall);
+            `EBREAK:    tagged Valid (tagged System EBreak);
             `SRET:      tagged Valid (tagged System ERet);
             `SFENCE_VM: tagged Valid (tagged Fence (tagged IntraCore SFenceVM));
             `WFI:       tagged Valid (tagged System WFI);
-            `MRTH:      tagged Invalid;
+            // `MRTH:      tagged Invalid;
             `MRTS:      tagged Valid (tagged System MRTS);
-            `HRTS:      tagged Invalid;
+            // `HRTS:      tagged Invalid;
             `CSRRW:     tagged Valid (tagged System ((instFields.rd == 0) ? CSRW : CSRRW));
             `CSRRS:     tagged Valid (tagged System ((instFields.rs1 == 0) ? CSRR : CSRRS));
             `CSRRC:     tagged Valid (tagged System ((instFields.rs1 == 0) ? CSRR : CSRRC));
