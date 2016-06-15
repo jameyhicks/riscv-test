@@ -13,6 +13,7 @@ import Vector::*;
 import VerificationPacket::*;
 import MemTypes::*;
 import SharedMemoryBridge::*;
+import PerfMonitorConnectal::*;
 
 // ProcControlControl
 interface ProcControlRequest;
@@ -112,7 +113,7 @@ module [Module] mkProcConnectal#(ProcControlIndication procControlIndication,
             noAction;
         endmethod
         method Action req(Bit#(32) index);
-            perfMonitorIndicator.resp(0);
+            perfMonitorIndication.resp(0);
         endmethod
     endinterface
 
