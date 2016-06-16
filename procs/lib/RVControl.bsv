@@ -10,13 +10,16 @@ endfunction
 
 (* noinline *)
 function Bool aluBr(BrFunc brFunc, Data a, Data b);
+    Bool eq = (a == b);
+    Bool lt = signedLT(a,b);
+    Bool ltu = (a < b);
     Bool brTaken = (case(brFunc)
-            Eq:         (a == b);
-            Neq:        (a != b);
-            Lt:         signedLT(a, b);
-            Ltu:        (a < b);
-            Ge:         signedGE(a, b);
-            Geu:        (a >= b);
+            Eq:         eq;
+            Neq:        (!eq);
+            Lt:         lt;
+            Ltu:        ltu;
+            Ge:         (!lt);
+            Geu:        (!ltu);
             Jal:        True;
             Jalr:       True;
             default:    True;
