@@ -90,7 +90,7 @@ module mkMulticycleCore(Core);
 
     Reg#(Data) rVal1 <- mkReg(0);
     Reg#(Data) rVal2 <- mkReg(0);
-    Reg#(Data) rVal3 <- mkReadOnlyReg(0);
+    Reg#(Data) rVal3 <- mkReg(0);
     Reg#(Data) data <- mkReg(0);
     Reg#(Data) addr <- mkReg(0);
     Reg#(Data) nextPc <- mkReg(0);
