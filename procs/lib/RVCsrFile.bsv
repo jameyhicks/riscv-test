@@ -5,6 +5,7 @@ import ConfigReg::*;
 import DefaultValue::*;
 import Ehr::*;
 import FIFOF::*;
+import RegUtil::*;
 
 interface RVCsrFile;
     // Read and Write ports
@@ -40,49 +41,6 @@ interface RVCsrFile;
     // performance stats is collected or not
     method Bool doPerfStats;
 endinterface
-
-// Fancy Reg functions
-function Reg#(Bit#(n)) truncateReg(Reg#(Bit#(m)) r) provisos (Add#(a__,n,m));
-    return (interface Reg;
-            method Bit#(n) _read = truncate(r._read);
-            method Action _write(Bit#(n) x) = r._write({truncateLSB(r._read), x});
-        endinterface);
-endfunction
-
-function Reg#(Bit#(n)) truncateRegLSB(Reg#(Bit#(m)) r) provisos (Add#(a__,n,m));
-    return (interface Reg;
-            method Bit#(n) _read = truncateLSB(r._read);
-            method Action _write(Bit#(n) x) = r._write({x, truncate(r._read)});
-        endinterface);
-endfunction
-
-function Reg#(Bit#(n)) zeroExtendReg(Reg#(Bit#(m)) r) provisos (Add#(a__,m,n));
-    return (interface Reg;
-            method Bit#(n) _read = zeroExtend(r._read);
-            method Action _write(Bit#(n) x) = r._write(truncate(x));
-        endinterface);
-endfunction
-
-function Reg#(t) readOnlyReg(t r);
-    return (interface Reg;
-            method t _read = r;
-            method Action _write(t x) = noAction;
-        endinterface);
-endfunction
-// module version of readOnlyReg for convenience
-module mkReadOnlyReg#(t x)(Reg#(t));
-    return readOnlyReg(x);
-endmodule
-
-function Reg#(t) addWriteSideEffect(Reg#(t) r, Action a);
-    return (interface Reg;
-            method t _read = r._read;
-            method Action _write(t x);
-                r._write(x);
-                a;
-            endmethod
-        endinterface);
-endfunction
 
 interface MToHost;
     interface Reg#(Data) reg_ifc;
