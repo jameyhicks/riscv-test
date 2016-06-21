@@ -1,9 +1,9 @@
-package SFIFO;
+package SearchFIFO;
 
 import Ehr::*;
 import Vector::*;
 
-interface SFIFO#(numeric type size, type dataType, type searchType);
+interface SearchFIFO#(numeric type size, type dataType, type searchType);
     method Action enq(dataType x);
     method Action deq;
     method dataType first;
@@ -13,7 +13,7 @@ endinterface
 
 // search < {enq , deq} < clear
 // first < deq
-module mkSFIFO#(function Bool isMatch(searchType s, dataType d))(SFIFO#(size, dataType, searchType)) provisos (Bits#(dataType, dataSize));
+module mkSearchFIFO#(function Bool isMatch(searchType s, dataType d))(SearchFIFO#(size, dataType, searchType)) provisos (Bits#(dataType, dataSize));
     // use valid bits to make search logic smaller
     Vector#(size, Reg#(Maybe#(dataType))) data <- replicateM(mkRegU);
     Reg#(Bit#(TLog#(size))) enqP <- mkReg(0);
