@@ -344,12 +344,12 @@ function Data getMCPUID(RiscVISASubset isa);
     return mcpuid;
 endfunction
 
-typedef Bit#(5) RIndx;
+typedef Bit#(5) RegIndex;
 typedef union tagged {
-    RIndx   Gpr;
-    RIndx   Fpu;
-} ArchRIndx deriving (Bits, Eq, FShow, Bounded);
-function Maybe#(ArchRIndx) toArchRIndx(Maybe#(RegType) rType, RIndx index);
+    RegIndex Gpr;
+    RegIndex Fpu;
+} FullRegIndex deriving (Bits, Eq, FShow, Bounded);
+function Maybe#(FullRegIndex) toFullRegIndex(Maybe#(RegType) rType, RegIndex index);
     return (case (rType)
             tagged Valid Gpr: tagged Valid tagged Gpr index;
             tagged Valid Fpu: tagged Valid tagged Fpu index;
@@ -363,29 +363,20 @@ typedef `PHYS_REG_COUNT NumPhyReg;
 `else
 typedef NumArchReg NumPhyReg;
 `endif
-// TODO: Clean this up
-typedef Bit#(TLog#(NumPhyReg)) PhyRIndx;
-function PhyRIndx identityRegRenaming(RegType rType, RIndx index);
-    if (rType == Fpu) begin
-        return {1, index};
-    end else begin
-        return {0, index};
-    end
-endfunction
 
-// This is not really needed now
-typedef struct {
-    Maybe#(ArchRIndx) src1;
-    Maybe#(ArchRIndx) src2;
-    Maybe#(ArchRIndx) src3;
-    Maybe#(ArchRIndx) dst;
-} ArchRegs deriving (Bits, Eq, FShow);
-typedef struct {
-    Maybe#(PhyRIndx) src1;
-    Maybe#(PhyRIndx) src2;
-    Maybe#(PhyRIndx) src3;
-    Maybe#(PhyRIndx) dst;
-} PhyRegs deriving (Bits, Eq, FShow);
+// // This is not really needed now
+// typedef struct {
+//     Maybe#(ArchRIndx) src1;
+//     Maybe#(ArchRIndx) src2;
+//     Maybe#(ArchRIndx) src3;
+//     Maybe#(ArchRIndx) dst;
+// } ArchRegs deriving (Bits, Eq, FShow);
+// typedef struct {
+//     Maybe#(PhyRIndx) src1;
+//     Maybe#(PhyRIndx) src2;
+//     Maybe#(PhyRIndx) src3;
+//     Maybe#(PhyRIndx) dst;
+// } PhyRegs deriving (Bits, Eq, FShow);
 
 typedef enum {
     Load    = 7'b0000011,

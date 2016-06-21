@@ -6,6 +6,7 @@ import GetPut::*;
 import Vector::*;
 
 import Abstraction::*;
+import RegUtil::*;
 import RVRFile::*;
 import RVCsrFile::*;
 import RVExec::*;
@@ -157,9 +158,9 @@ module mkMulticycleCore(Core);
     endrule
 
     rule doRegRead(!htifStall && state == RegRead);
-        rVal1 <= rf.rd1(fromMaybe(Gpr, dInst.rs1), getInstFields(inst).rs1);
-        rVal2 <= rf.rd2(fromMaybe(Gpr, dInst.rs2), getInstFields(inst).rs2);
-        rVal3 <= rf.rd3(fromMaybe(Gpr, dInst.rs3), getInstFields(inst).rs3);
+        rVal1 <= rf.rd1(toFullRegIndex(dInst.rs1, getInstFields(inst).rs1));
+        rVal2 <= rf.rd2(toFullRegIndex(dInst.rs2, getInstFields(inst).rs2));
+        rVal3 <= rf.rd3(toFullRegIndex(dInst.rs3, getInstFields(inst).rs3));
         state <= Execute;
     endrule
 
@@ -292,10 +293,8 @@ module mkMulticycleCore(Core);
             state <= Trap2;
         end else begin
             // This instruction retired
-            if (dInst.dst matches tagged Valid .dstRegType) begin
-                // Use data from CSR if available
-                rf.wr(dstRegType, getInstFields(inst).rd, fromMaybe(dataWb, maybeData));
-            end
+            // write to the register file
+            rf.wr(toFullRegIndex(dInst.dst, getInstFields(inst).rd), fromMaybe(dataWb, maybeData));
             // always redirect
             pc <= nextPc;
             state <= IMMU;
