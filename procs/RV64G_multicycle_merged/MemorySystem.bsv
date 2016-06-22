@@ -20,7 +20,7 @@ module mkBasicMemorySystem(SingleCoreMemorySystem);
     let itlb <- mkDummyRVIMMU(fprintTrace(tracefile, "IMMU-Arbiter", arbiter.iMMU));
     let icache <- mkDummyRVICache(fprintTrace(tracefile, "ICache-Arbiter", arbiter.iCache));
     let dtlb <- mkDummyRVDMMU(False, fprintTrace(tracefile, "DMMU-Arbiter", arbiter.dMMU));
-    let dcache <- mkDummyRVDCache(fprintTrace(tracefile, "DCache-Arbiter", arbiter.dCache));
+    let dcache <- mkDummyRVDCache(fprintTrace(stdout, "DCache-Arbiter", arbiter.dCache));
 
     Vector#(numCores, MemorySystem) onecore;
     onecore[0] = (interface MemorySystem;
@@ -68,6 +68,10 @@ module mkDummyRVDCache#(MainMemoryServer#(void) mainMemory)(Server#(RVDMemReq, R
     // NOTE: normal stores with byte enables count as RMW operations.
     Reg#(Bool) rmw <- mkReg(False);
 
+    // Forces this dummy cache to wait for writes to finish before handling new reads
+    Reg#(Bool) writePending <- mkReg(False);
+    Reg#(Bool) readPending <- mkReg(False);
+
     FIFOF#(Tuple3#(Addr,ByteEn,Bool)) outstanding <- mkFIFOF;
 
     function Bool requiresRMW(RVDMemReq r);
@@ -78,18 +82,21 @@ module mkDummyRVDCache#(MainMemoryServer#(void) mainMemory)(Server#(RVDMemReq, R
     rule ignoreWriteResps;
         let _x <- mainMemory.response.get();
         when(_x.write == True, noAction);
+        writePending <= False;
     endrule
 
     // hanle request
-    rule handleRVDMemReq(!rmw); // FIXME: This can result in an issue if there are multiple outstanding loads
+    rule handleRVDMemReq(!rmw && !writePending && !readPending);
         let r = procMemReq.first;
         // This dummy cache does not support LR/SR instructions
         if (isLoad(r.op) || requiresRMW(r)) begin
             // send read request
             mainMemory.request.put(MainMemoryReq{write: False, byteen: '1, addr: r.addr, data: ?, tag: ?});
+            readPending <= True;
         end else if (isStore(r.op)) begin
             // send write request
             mainMemory.request.put(MainMemoryReq{write: True, byteen: pack(r.byteEn), addr: r.addr, data: r.data, tag: ?});
+            writePending <= True;
             if (r.op == tagged Mem Sc) begin
                 // successful
                 procMemResp.enq(0);
@@ -102,15 +109,18 @@ module mkDummyRVDCache#(MainMemoryServer#(void) mainMemory)(Server#(RVDMemReq, R
         end
     endrule
 
-    rule finishRMW(rmw);
+    rule finishRMW(rmw && !writePending);
         let r = procMemReq.first;
         // get read data
         let memResp <- mainMemory.response.get;
+        when(memResp.write == False, noAction);
+        readPending <= False;
         let data = memResp.data;
         // amoExec also handles plain stores with byte enables
         // If r.op is not an AMO operation, use Swap to perform stores with byte enables
         let newData = amoExec(r.op matches tagged Amo .amoFunc ? amoFunc : Swap, r.byteEn, data, r.data);
         mainMemory.request.put(MainMemoryReq{write: True, byteen: '1, addr: r.addr, data: newData, tag: ?});
+        writePending <= True;
         if (r.op == tagged Mem Sc) begin
             // Successful
             procMemResp.enq(0);
@@ -124,7 +134,9 @@ module mkDummyRVDCache#(MainMemoryServer#(void) mainMemory)(Server#(RVDMemReq, R
 
     rule handleRVDMemResp(!rmw);
         let memResp <- mainMemory.response.get;
+        when(memResp.write == False, noAction);
         procMemResp.enq(memResp.data);
+        readPending <= False;
     endrule
 
     interface Put request;

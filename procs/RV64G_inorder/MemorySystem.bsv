@@ -86,7 +86,7 @@ module mkDummyRVDCache#(MainMemoryServer#(void) mainMemory)(Server#(RVDMemReq, R
     endrule
 
     // hanle request
-    rule handleRVDMemReq(!rmw && !writePending && !readPending); // XXX: hopefully this fixed it // FIXME: This can result in an issue if there are multiple outstanding loads
+    rule handleRVDMemReq(!rmw && !writePending && !readPending);
         let r = procMemReq.first;
         // This dummy cache does not support LR/SR instructions
         if (isLoad(r.op) || requiresRMW(r)) begin
