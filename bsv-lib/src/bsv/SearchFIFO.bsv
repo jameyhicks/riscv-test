@@ -8,10 +8,12 @@ interface SearchFIFO#(numeric type size, type dataType, type searchType);
     method Action deq;
     method dataType first;
     method Action clear;
+    method Bool notEmpty;
+    method Bool notFull;
     method Bool search(searchType x);
 endinterface
 
-// search < {enq , deq} < clear
+// {search, notEmpty, notFull} < {enq , deq} < clear
 // first < deq
 module mkSearchFIFO#(function Bool isMatch(searchType s, dataType d))(SearchFIFO#(size, dataType, searchType)) provisos (Bits#(dataType, dataSize));
     // use valid bits to make search logic smaller
@@ -39,8 +41,8 @@ module mkSearchFIFO#(function Bool isMatch(searchType s, dataType d))(SearchFIFO
             enqueued = True;
             nextEnqP = (enqP == fromInteger(valueOf(size) - 1)) ? 0 : enqP + 1;
             // perform state updates
-            data[enqP] <= tagged Valid enqVal;
-            enqP <= nextEnqP;
+            // data[enqP] <= tagged Valid enqVal;
+            // enqP <= nextEnqP;
         end
 
         // dequeue logic
@@ -48,8 +50,27 @@ module mkSearchFIFO#(function Bool isMatch(searchType s, dataType d))(SearchFIFO
             dequeued = True;
             nextDeqP = (deqP == fromInteger(valueOf(size) - 1)) ? 0 : deqP + 1;
             // perform state updates
-            deqP <= nextDeqP;
-            data[deqP] <= tagged Invalid;
+            // data[deqP] <= tagged Invalid;
+            // deqP <= nextDeqP;
+        end
+
+        // update data
+        // this is done in this way to avoid a false conflict detected by the
+        // compiler (enqReq[2] is valid, deqReq[2] is true, and enqP == deqP)
+        for (Integer i = 0 ; i < valueOf(size) ; i = i+1) begin
+            Bool update = False;
+            Maybe#(dataType) newValue = tagged Invalid;
+            if (fromInteger(i) == enqP && isValid(enqReq[2])) begin
+                update = True;
+                newValue = enqReq[2];
+            end else if (fromInteger(i) == deqP && deqReq[2]) begin
+                update = True;
+                newValue = tagged Invalid;
+            end
+            // should perform at most two writes, but avoids false conflicts
+            if (update) begin
+                data[i] <= newValue;
+            end
         end
 
         // update empty and full if an element was enqueued or dequeued
@@ -83,6 +104,13 @@ module mkSearchFIFO#(function Bool isMatch(searchType s, dataType d))(SearchFIFO
         // clear any pending enq or deq
         enqReq[1] <= tagged Invalid;
         deqReq[1] <= False;
+    endmethod
+
+    method Bool notEmpty if (!isValid(enqReq[0]) && !deqReq[0]);
+        return !empty;
+    endmethod
+    method Bool notFull if (!isValid(enqReq[0]) && !deqReq[0]);
+        return !full;
     endmethod
 
     // different search implementations
