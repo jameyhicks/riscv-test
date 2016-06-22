@@ -51,15 +51,17 @@ module mkSharedMemoryBridge(SharedMemoryBridge) provisos (EQ#(DataSz, DataBusWid
     Bool verbose = False;
     File tracefile = verbose ? stdout : tagged InvalidFile;
 
-    FIFOF#(MemoryClientType)        pendingReads  <- fprintTraceM(tracefile, "SharedMemoryBridge::pendingReads",  mkSizedFIFOF(16));
-    FIFO#(MemRequest)               readReqFifo   <- fprintTraceM(tracefile, "SharedMemoryBridge::readReqFifo",   mkFIFO);
-    FIFO#(MemRequest)               writeReqFifo  <- fprintTraceM(tracefile, "SharedMemoryBridge::writeReqFifo",  mkFIFO);
-    FIFO#(MemData#(DataBusWidth))   writeDataFifo <- fprintTraceM(tracefile, "SharedMemoryBridge::writeDataFifo", mkSizedBRAMFIFO(1024)); // XXX: Not sure where this size came from
-    FIFO#(MemData#(DataBusWidth))   readDataFifo  <- fprintTraceM(tracefile, "SharedMemoryBridge::readDataFifo",  mkFIFO);
+    // Bool is for isWrite
+    FIFOF#(Tuple2#(Bool, MemoryClientType)) pendingReqs   <- fprintTraceM(tracefile, "SharedMemoryBridge::pendingReqs",   mkSizedFIFOF(16));
+    FIFO#(MemRequest)                       readReqFifo   <- fprintTraceM(tracefile, "SharedMemoryBridge::readReqFifo",   mkFIFO);
+    FIFO#(MemRequest)                       writeReqFifo  <- fprintTraceM(tracefile, "SharedMemoryBridge::writeReqFifo",  mkFIFO);
+    FIFO#(MemData#(DataBusWidth))           writeDataFifo <- fprintTraceM(tracefile, "SharedMemoryBridge::writeDataFifo", mkSizedBRAMFIFO(1024)); // XXX: Not sure where this size came from
+    FIFO#(MemData#(DataBusWidth))           readDataFifo  <- fprintTraceM(tracefile, "SharedMemoryBridge::readDataFifo",  mkFIFO);
+    FIFO#(Bit#(MemTagSize))                 writeDoneFifo <- fprintTraceM(tracefile, "SharedMemoryBridge::writeDoneFifo", mkFIFO);
 
-    Reg#(SGLId)                     refPointerReg <- mkReg(0);
-    Reg#(Addr)                      memSizeReg    <- mkReg(64 << 20); // 64 MB by default
-    Reg#(Bool)                      flushRespReq  <- mkReg(False);
+    Reg#(SGLId)                             refPointerReg <- mkReg(0);
+    Reg#(Addr)                              memSizeReg    <- mkReg(64 << 20); // 64 MB by default
+    Reg#(Bool)                              flushRespReq  <- mkReg(False);
 
     // addr aligned with 8B boundary
     function Addr getDWordAlignAddr(Addr a);
@@ -89,26 +91,35 @@ module mkSharedMemoryBridge(SharedMemoryBridge) provisos (EQ#(DataSz, DataBusWid
                     // $display("[SharedMem] write - addr: 0x%08x, data: 0x%08x", addr, r.data);
                     writeReqFifo.enq(MemRequest{sglId: refPointerReg, offset: truncate(addr), burstLen: 8, tag: 0});
                     writeDataFifo.enq(MemData{data: r.data, tag: 0, last: True });
+                    pendingReqs.enq(tuple2(True, r.tag));
                 end else begin
                     // $display("[SharedMem] read - addr: 0x%08x", addr);
                     readReqFifo.enq(MemRequest{sglId: refPointerReg, offset: truncate(addr), burstLen: 8, tag: 1});
-                    pendingReads.enq(r.tag);
+                    pendingReqs.enq(tuple2(False, r.tag));
                 end
             endmethod
         endinterface
         interface Get response;
             method ActionValue#(MainMemoryResp#(MemoryClientType)) get;
-                let client = pendingReads.first;
-                pendingReads.deq;
-                let d = readDataFifo.first;
-                readDataFifo.deq;
+                let {isWrite, client} = pendingReqs.first;
+                pendingReqs.deq;
 
-                if (d.last != True) begin
-                    $fdisplay(stderr, "[ERROR] [SharedMem] response - last != True");
+                if (isWrite) begin
+                    let memTag = writeDoneFifo.first;
+                    writeDoneFifo.deq;
+
+                    return MainMemoryResp{write: True, data: 0, tag: client};
+                end else begin
+                    let d = readDataFifo.first;
+                    readDataFifo.deq;
+
+                    if (d.last != True) begin
+                        $fdisplay(stderr, "[ERROR] [SharedMem] response - last != True");
+                    end
+
+                    // $display("[SharedMem] read - data: 0x%08x", d.data);
+                    return MainMemoryResp{write: False, data: d.data, tag: client};
                 end
-
-                // $display("[SharedMem] read - data: 0x%08x", d.data);
-                return MainMemoryResp{write: False, data: d.data, tag: client};
             endmethod
         endinterface
     endinterface
@@ -121,12 +132,7 @@ module mkSharedMemoryBridge(SharedMemoryBridge) provisos (EQ#(DataSz, DataBusWid
     interface MemWriteClient to_host_write;
         interface Get writeReq = toGet(writeReqFifo);
         interface Get writeData = toGet(writeDataFifo);
-        interface Put writeDone;
-            method Action put(Bit#(MemTagSize) x);
-                // this bridge ignore write responses
-                noAction;
-            endmethod
-        endinterface
+        interface Put writeDone = toPut(writeDoneFifo);
     endinterface
 
     method Action initSharedMem(Bit#(32) refPointer, Addr memSize);
@@ -139,6 +145,6 @@ module mkSharedMemoryBridge(SharedMemoryBridge) provisos (EQ#(DataSz, DataBusWid
         flushRespReq <= True;
     endmethod
     method PendMemRespCnt numberFlyingOperations;
-        return pendingReads.notEmpty ? 1 : 0;
+        return pendingReqs.notEmpty ? 1 : 0;
     endmethod
 endmodule

@@ -244,15 +244,26 @@ function Maybe#(RVDecodedInst) decodeInst(Instruction inst);
     if (!isValid(execFunc)) begin
         execFunc = toExecFuncSupervisor(inst);
     end
-    if (!isValid(execFunc)) begin
+
+`ifdef m
+    if (`m && !isValid(execFunc)) begin
         execFunc = toExecFuncM(inst);
     end
-    if (!isValid(execFunc)) begin
+`endif
+
+`ifdef a
+    if (`a && !isValid(execFunc)) begin
         execFunc = toExecFuncA(inst);
     end
-    if (!isValid(execFunc)) begin
+`endif
+
+`ifdef f
+    // TODO: simplify decoder if f is enabled but not d
+    if (`f && !isValid(execFunc)) begin
         execFunc = toExecFuncFD(inst);
     end
+`endif
+
     if (execFunc matches tagged Valid .validExecFunc) begin
         InstType instType = toInstType(inst);
         return tagged Valid (RVDecodedInst {
@@ -285,5 +296,9 @@ function Maybe#(Data) getImmediate(ImmType imm, Instruction inst);
             Z:  tagged Valid immZ;
             default: tagged Invalid;
         endcase);
+endfunction
+
+function Bit#(2) getMinPriv(Instruction inst);
+    return (getInstFields(inst).opcode == System) ? inst[29:28] : prvU;
 endfunction
 
