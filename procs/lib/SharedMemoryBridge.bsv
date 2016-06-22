@@ -51,8 +51,11 @@ module mkSharedMemoryBridge(SharedMemoryBridge) provisos (EQ#(DataSz, DataBusWid
     Bool verbose = False;
     File tracefile = verbose ? stdout : tagged InvalidFile;
 
+    // TODO: Make pendingReqs larger than 1 and add a way to enforce
+    // per-address ordering between loads and stores
+
     // Bool is for isWrite
-    FIFOF#(Tuple2#(Bool, MemoryClientType)) pendingReqs   <- fprintTraceM(tracefile, "SharedMemoryBridge::pendingReqs",   mkSizedFIFOF(16));
+    FIFOF#(Tuple2#(Bool, MemoryClientType)) pendingReqs   <- fprintTraceM(tracefile, "SharedMemoryBridge::pendingReqs",   mkSizedFIFOF(1));
     FIFO#(MemRequest)                       readReqFifo   <- fprintTraceM(tracefile, "SharedMemoryBridge::readReqFifo",   mkFIFO);
     FIFO#(MemRequest)                       writeReqFifo  <- fprintTraceM(tracefile, "SharedMemoryBridge::writeReqFifo",  mkFIFO);
     FIFO#(MemData#(DataBusWidth))           writeDataFifo <- fprintTraceM(tracefile, "SharedMemoryBridge::writeDataFifo", mkSizedBRAMFIFO(1024)); // XXX: Not sure where this size came from
