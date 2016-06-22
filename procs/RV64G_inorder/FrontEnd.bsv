@@ -37,19 +37,11 @@ module mkInorderFrontEnd(FrontEnd#(EpochType)); // TODO: Change Epoch Type
 
     Reg#(Bool) running <- mkReg(False);
 
-
-    // Reg#(Addr) pc <- mkReg(0);
-    // Reg#(Maybe#(ExceptionCause)) exception <- mkReg(tagged Invalid);
-    // Reg#(Instruction) inst <- mkReg(0);
-    // Reg#(RVDecodedInst) dInst <- mkReg(unpack(0));
-    // Reg#(FrontEndCsrs) csrState <- mkReg(defaultValue);
-    // Reg#(FEState) state <- mkReg(Wait);
     Reg#(Addr) pcReg <- mkReg(0);
     Reg#(EpochType) epochReg <- mkReg(unpack(0));
 
     FIFO#(Stage1) stage1Fifo <- mkFIFO;
     FIFO#(Stage2) stage2Fifo <- mkFIFO;
-
 
     FIFO#(RVIMMUReq)    mmuReq <- mkFIFO;
     FIFO#(RVIMMUResp)   mmuResp <- mkFIFO;

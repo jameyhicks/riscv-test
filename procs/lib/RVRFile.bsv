@@ -19,17 +19,12 @@ module mkArchRFile( ArchRFile );
     Vector#(32, Reg#(Data)) fpu_rfile <- replicateM(mkReg(0));
 
     function Data read(Maybe#(FullRegIndex) fullRegIndex);
-        //if (fullRegIndex matches tagged Valid .validRegIndex) begin
-            return (case (fullRegIndex) matches
-                    tagged Valid (tagged Gpr 0): 0;
-                    tagged Valid (tagged Gpr .rIndex): gpr_rfile[rIndex];
-                    tagged Valid (tagged Fpu .rIndex): fpu_rfile[rIndex];
-                    default: 0;
-                endcase);
-        //end else begin
-        //    // reading invalid register
-        //    return 0;
-        //end
+        return (case (fullRegIndex) matches
+                tagged Valid (tagged Gpr 0): 0;
+                tagged Valid (tagged Gpr .rIndex): gpr_rfile[rIndex];
+                tagged Valid (tagged Fpu .rIndex): fpu_rfile[rIndex];
+                default: 0;
+            endcase);
     endfunction
    
     method Action wr(Maybe#(FullRegIndex) fullRegIndex, Data data);
