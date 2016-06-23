@@ -20,7 +20,7 @@ module mkBasicMemorySystem(SingleCoreMemorySystem);
     let itlb <- mkDummyRVIMMU(fprintTrace(tracefile, "IMMU-Arbiter", arbiter.iMMU));
     let icache <- mkDummyRVICache(fprintTrace(tracefile, "ICache-Arbiter", arbiter.iCache));
     let dtlb <- mkDummyRVDMMU(False, fprintTrace(tracefile, "DMMU-Arbiter", arbiter.dMMU));
-    let dcache <- mkDummyRVDCache(fprintTrace(stdout, "DCache-Arbiter", arbiter.dCache));
+    let dcache <- mkDummyRVDCache(fprintTrace(tracefile, "DCache-Arbiter", arbiter.dCache));
 
     Vector#(numCores, MemorySystem) onecore;
     onecore[0] = (interface MemorySystem;
