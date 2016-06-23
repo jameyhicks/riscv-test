@@ -62,18 +62,22 @@ module mkDoubleMult(Server#(Tuple3#(Double, Double, RoundMode), Tuple2#(Double, 
     return fpu;
 endmodule
 `endif
+`ifndef NO_FDIV
 (* synthesize *)
 module mkDoubleDiv(Server#(Tuple3#(Double, Double, RoundMode), Tuple2#(Double, Exception)));
     let int_div <- mkDivider(2);
     let fpu <- mkFloatingPointDivider(int_div);
     return fpu;
 endmodule
+`endif
+`ifndef NO_FSQRT
 (* synthesize *)
 module mkDoubleSqrt(Server#(Tuple2#(Double, RoundMode), Tuple2#(Double, Exception)));
     let int_sqrt <- mkSquareRooter(3);
     let fpu <- mkFloatingPointSquareRooter(int_sqrt);
     return fpu;
 endmodule
+`endif
 (* synthesize *)
 module mkDoubleFMA(Server#(Tuple4#(Maybe#(Double), Double, Double, RoundMode), Tuple2#(Double, Exception)));
     let fpu <- mkFloatingPointFusedMultiplyAccumulate;
@@ -91,18 +95,22 @@ module mkFloatMult(Server#(Tuple3#(Float, Float, RoundMode), Tuple2#(Float, Exce
     let fpu <- mkFloatingPointMultiplier;
     return fpu;
 endmodule
+`ifndef NO_FDIV
 // (* synthesize *)
 module mkFloatDiv(Server#(Tuple3#(Float, Float, RoundMode), Tuple2#(Float, Exception)));
     let int_div <- mkDivider(2);
     let fpu <- mkFloatingPointDivider(int_div);
     return fpu;
 endmodule
+`endif
+`ifndef NO_FSQRT
 // (* synthesize *)
 module mkFloatSqrt(Server#(Tuple2#(Float, RoundMode), Tuple2#(Float, Exception)));
     let int_sqrt <- mkSquareRooter(3);
     let fpu <- mkFloatingPointSquareRooter(int_sqrt);
     return fpu;
 endmodule
+`endif
 // (* synthesize *)
 module mkFloatFMA(Server#(Tuple4#(Maybe#(Float), Float, Float, RoundMode), Tuple2#(Float, Exception)));
     let fpu <- mkFloatingPointFusedMultiplyAccumulate;
@@ -779,6 +787,7 @@ module mkFpuExecPipeline(FpuExec);
     // Pipelined units
     // Double
     let double_fma <- mkDoubleFMA;
+
 `ifdef REUSE_FMA
     let double_add <- mkAddWrapperForFMA(double_fma);
     let double_mult <- mkMulWrapperForFMA(double_fma);
@@ -786,8 +795,13 @@ module mkFpuExecPipeline(FpuExec);
     let double_add <- mkDoubleAdd;
     let double_mult <- mkDoubleMult;
 `endif
+
+`ifndef NO_FDIV
     let double_div <- mkDoubleDiv;
+`endif
+`ifndef NO_FSQRT
     let double_sqrt <- mkDoubleSqrt;
+`endif
 
     // // Float
     // let float_add <- mkFloatAdd;
@@ -800,8 +814,12 @@ module mkFpuExecPipeline(FpuExec);
     let float_fma <- mkFloatWrapperForFMA(double_fma);
     let float_add <- mkFloatWrapperForBinaryOp(double_add);
     let float_mult <- mkFloatWrapperForBinaryOp(double_mult);
+`ifndef NO_FDIV
     let float_div <- mkFloatWrapperForBinaryOp(double_div);
+`endif
+`ifndef NO_FSQRT
     let float_sqrt <- mkFloatWrapperForSqrt(double_sqrt);
+`endif
 
     rule finish;
         let x = fpu_exec_fifo.first;
@@ -820,8 +838,12 @@ module mkFpuExecPipeline(FpuExec);
                 FAdd:   begin {out, exc} <- float_add.response.get; pipeline_result = True; end
                 FSub:   begin {out, exc} <- float_add.response.get; pipeline_result = True; end
                 FMul:   begin {out, exc} <- float_mult.response.get; pipeline_result = True; end
+`ifndef NO_FDIV
                 FDiv:   begin {out, exc} <- float_div.response.get; pipeline_result = True; end
+`endif
+`ifndef NO_FSQRT
                 FSqrt:  begin {out, exc} <- float_sqrt.response.get; pipeline_result = True; end
+`endif
                 FMAdd:  begin {out, exc} <- float_fma.response.get; pipeline_result = True; end
                 FMSub:  begin {out, exc} <- float_fma.response.get; pipeline_result = True; end
                 FNMSub: begin {out, exc} <- float_fma.response.get; out = -out; pipeline_result = True; end
@@ -844,8 +866,12 @@ module mkFpuExecPipeline(FpuExec);
                 FAdd:   begin {out, exc} <- double_add.response.get; pipeline_result = True; end
                 FSub:   begin {out, exc} <- double_add.response.get; pipeline_result = True; end
                 FMul:   begin {out, exc} <- double_mult.response.get; pipeline_result = True; end
+`ifndef NO_FDIV
                 FDiv:   begin {out, exc} <- double_div.response.get; pipeline_result = True; end
+`endif
+`ifndef NO_FSQRT
                 FSqrt:  begin {out, exc} <- double_sqrt.response.get; pipeline_result = True; end
+`endif
                 FMAdd:  begin {out, exc} <- double_fma.response.get; pipeline_result = True; end
                 FMSub:  begin {out, exc} <- double_fma.response.get; pipeline_result = True; end
                 FNMSub: begin {out, exc} <- double_fma.response.get; out = -out; pipeline_result = True; end
@@ -891,8 +917,12 @@ module mkFpuExecPipeline(FpuExec);
                 FAdd:   float_add.request.put(tuple3(in1, in2, fpu_rm));
                 FSub:   float_add.request.put(tuple3(in1, -in2, fpu_rm));
                 FMul:   float_mult.request.put(tuple3(in1, in2, fpu_rm));
+`ifndef NO_FDIV
                 FDiv:   float_div.request.put(tuple3(in1, in2, fpu_rm));
+`endif
+`ifndef NO_FSQRT
                 FSqrt:  float_sqrt.request.put(tuple2(in1, fpu_rm));
+`endif
                 FMAdd:  float_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
                 FMSub:  float_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
                 FNMSub: float_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
@@ -913,8 +943,12 @@ module mkFpuExecPipeline(FpuExec);
                 FAdd:   double_add.request.put(tuple3(in1, in2, fpu_rm));
                 FSub:   double_add.request.put(tuple3(in1, -in2, fpu_rm));
                 FMul:   double_mult.request.put(tuple3(in1, in2, fpu_rm));
+`ifndef NO_FDIV
                 FDiv:   double_div.request.put(tuple3(in1, in2, fpu_rm));
+`endif
+`ifndef NO_FSQRT
                 FSqrt:  double_sqrt.request.put(tuple2(in1, fpu_rm));
+`endif
                 FMAdd:  double_fma.request.put(tuple4(tagged Valid in3, in1, in2, fpu_rm));
                 FMSub:  double_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));
                 FNMSub: double_fma.request.put(tuple4(tagged Valid (-in3), in1, in2, fpu_rm));

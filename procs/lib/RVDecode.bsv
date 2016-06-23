@@ -159,18 +159,24 @@ function Maybe#(ExecFunc) toExecFuncFD(Instruction inst);
             `FADD_S:    tagged Valid (tagged Fpu FpuInst{func: FAdd,     precision: Single});
             `FSUB_S:    tagged Valid (tagged Fpu FpuInst{func: FSub,     precision: Single});
             `FMUL_S:    tagged Valid (tagged Fpu FpuInst{func: FMul,     precision: Single});
+`ifndef NO_FDIV
             `FDIV_S:    tagged Valid (tagged Fpu FpuInst{func: FDiv,     precision: Single});
+`endif
             `FSGNJ_S:   tagged Valid (tagged Fpu FpuInst{func: FSgnj,    precision: Single});
             `FSGNJN_S:  tagged Valid (tagged Fpu FpuInst{func: FSgnjn,   precision: Single});
             `FSGNJX_S:  tagged Valid (tagged Fpu FpuInst{func: FSgnjx,   precision: Single});
             `FMIN_S:    tagged Valid (tagged Fpu FpuInst{func: FMin,     precision: Single});
             `FMAX_S:    tagged Valid (tagged Fpu FpuInst{func: FMax,     precision: Single});
+`ifndef NO_FSQRT
             `FSQRT_S:   tagged Valid (tagged Fpu FpuInst{func: FSqrt,    precision: Single});
+`endif
 
             `FADD_D:    tagged Valid (tagged Fpu FpuInst{func: FAdd,     precision: Double});
             `FSUB_D:    tagged Valid (tagged Fpu FpuInst{func: FSub,     precision: Double});
             `FMUL_D:    tagged Valid (tagged Fpu FpuInst{func: FMul,     precision: Double});
+`ifndef NO_FDIV
             `FDIV_D:    tagged Valid (tagged Fpu FpuInst{func: FDiv,     precision: Double});
+`endif
             `FSGNJ_D:   tagged Valid (tagged Fpu FpuInst{func: FSgnj,    precision: Double});
             `FSGNJN_D:  tagged Valid (tagged Fpu FpuInst{func: FSgnjn,   precision: Double});
             `FSGNJX_D:  tagged Valid (tagged Fpu FpuInst{func: FSgnjx,   precision: Double});
@@ -178,7 +184,9 @@ function Maybe#(ExecFunc) toExecFuncFD(Instruction inst);
             `FMAX_D:    tagged Valid (tagged Fpu FpuInst{func: FMax,     precision: Double});
             `FCVT_S_D:  tagged Valid (tagged Fpu FpuInst{func: FCvt_FF,  precision: Single});
             `FCVT_D_S:  tagged Valid (tagged Fpu FpuInst{func: FCvt_FF,  precision: Double});
+`ifndef NO_FSQRT
             `FSQRT_D:   tagged Valid (tagged Fpu FpuInst{func: FSqrt,    precision: Double});
+`endif
 
             `FLE_S:     tagged Valid (tagged Fpu FpuInst{func: FLe,      precision: Single});
             `FLT_S:     tagged Valid (tagged Fpu FpuInst{func: FLt,      precision: Single});
