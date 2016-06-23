@@ -29,6 +29,7 @@ typedef struct {
     Bit#(64) nextPc;
     Bit#(32) instruction;
     Bit#(64) data;
+    Bit#(64) addr;
     Bit#(7)  dst;
     Bool     trap;
     Bit#(8)  trapType;

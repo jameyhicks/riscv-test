@@ -323,6 +323,14 @@ std::string SpikeTandemVerifier::verificationPacketToString(VerificationPacket p
         }
         buffer << " [" << regName << " = 0x" << std::hex << p.data << "]";
     }
+    switch (p.instruction & 0x7F) {
+        case 0x03: // Load
+        case 0x23: // Store
+        case 0x2F: // AMO
+        case 0x07: // FP-Load
+        case 0x27: // FP-Store
+            buffer << " (addr = 0x" << std::hex << p.addr << ")";
+    }
     return buffer.str();
 }
 

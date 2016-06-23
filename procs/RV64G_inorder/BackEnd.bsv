@@ -245,7 +245,7 @@ module mkInorderBackEnd(BackEnd#(EpochType));
 
     // only allow this to fire if this instruction is last instruction in pipeline.
     // This is necessary for stores due to the lack of a speculative store buffer.
-    rule doMem(memToWriteBack.notFull);
+    rule doMem(!memToWriteBack.notEmpty);
         let instState = executeToMem.first;
         executeToMem.deq;
 
@@ -390,6 +390,7 @@ module mkInorderBackEnd(BackEnd#(EpochType));
                     pc: pc,
                     nextPc: fromMaybe(nextPc, maybeNextPc),
                     data: fromMaybe(data, maybeData),
+                    addr: addr,
                     instruction: inst,
                     dst: {pack(dInst.dst), getInstFields(inst).rd},
                     trap: isValid(maybeTrap),
