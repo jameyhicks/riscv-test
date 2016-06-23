@@ -7,14 +7,6 @@ import RVExec::*;
 import RVDecode::*;
 import RVTypes::*;
 
-typedef enum {
-    Wait,
-    IMMU,
-    IF,
-    Dec,
-    Send
-} FEState deriving (Bits, Eq, FShow);
-
 typedef struct {
     Addr pc;
     Addr ppc;
