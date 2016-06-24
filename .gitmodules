@@ -13,3 +13,6 @@
 [submodule "buildcache"]
 	path = buildcache
 	url = https://github.com/cambridgehackers/buildcache.git
+[submodule "riscv-qemu"]
+	path = riscv-qemu
+	url = git://github.com/cambridgehackers/riscv-qemu
