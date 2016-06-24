@@ -8,6 +8,7 @@ before_script:
 - ln -s /usr/lib/x86_64-linux-gnu/libgmp.so.10 lib/libgmp.so.3
 env:
   global:
+    - RISCV="/home/travis/riscv_install"
     - BLUESPECDIR=$PWD/Bluespec-2015.09.beta2/lib
     - PATH=$PATH:$PWD/Bluespec-2015.09.beta2/bin
     - LD_LIBRARY_PATH=$PWD/lib
@@ -38,10 +39,6 @@ addons:
       - python-ply
       - texinfo
       - verilator
-
-env:
-  global:
-    - RISCV="/home/travis/riscv_install"
 
 before_install:
   # make install destination
