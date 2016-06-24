@@ -31,6 +31,8 @@ env:
 before_install:
   # make install destination
   - mkdir -p $RISCV
+  # use gcc 4.8
+  - export CXX=g++-4.8 CC=gcc-4.8
   - sed -i s/JOBS=16/JOBS=2/ riscv-tools/build.common
 
 # extra time duing long builds
