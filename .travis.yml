@@ -8,19 +8,19 @@ addons:
     sources:
       - ubuntu-toolchain-r-test
     packages:
-      - gcc-4.8
-      - g++-4.8
-      - gperf
       - autoconf
       - automake
       - autotools-dev
+      - bison
+      - build-essential
+      - flex
+      - g++-4.8
+      - gawk
+      - gcc-4.8
+      - gperf
+      - libgmp-dev
       - libmpc-dev
       - libmpfr-dev
-      - libgmp-dev
-      - gawk
-      - build-essential
-      - bison
-      - flex
       - texinfo
       - verilator
 
