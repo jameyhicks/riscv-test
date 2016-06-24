@@ -52,4 +52,5 @@ install: travis_wait
 
 script:
 - ./build-verilator.sh
+- echo build echo
 - export PYTHONPATH=$PWD/scripts; cd connectal; make scripts/syntax/parsetab.py; cd $CONNECTAL_TEST; make build.$CONNECTAL_ARCH run.$CONNECTAL_ARCH
