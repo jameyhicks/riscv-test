@@ -48,7 +48,7 @@ module mkProc(Proc);
     // +----------------+
 
     let front_to_back <- mkConnection(frontend, backend);
-    let fron_to_mem <- mkConnection(frontend, memorySystem.core[0]);
+    let front_to_mem <- mkConnection(frontend, memorySystem.core[0]);
     let back_to_mem <- mkConnection(backend, memorySystem.core[0]);
 
     VerificationPacketFilter verificationPacketFilter <- mkVerificationPacketFilter(backend.getVerificationPacket);
