@@ -31,14 +31,7 @@ env:
 before_install:
   # make install destination
   - mkdir -p $RISCV
-  # don't forget to clone riscv-tests/env
-  - cd riscv-tests
-  - git submodule update --init
-  - cd ..
-  # actually use new gcc
-  - export CXX=g++-4.8 CC=gcc-4.8
-  # only have 2 cores on the travis machine
-  - sed -i.bak 's/JOBS=16/JOBS=8/' build.common
+  - sed -i s/JOBS=16/JOBS=2/ riscv-tools/build.common
 
 # extra time duing long builds
 install: travis_wait
