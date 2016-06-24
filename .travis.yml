@@ -2,6 +2,17 @@ language: cpp
 # run on new infrastructure
 sudo: false
 cache: apt
+before_script:
+- if [ -d Bluespec-2015.09.beta2 ] ; then echo bluespec cached; else curl http://www.bluespec.com/downloads/Bluespec-2015.09.beta2.tar.gz | tar -zxf - ; fi
+- mkdir -p lib
+- ln -s /usr/lib/x86_64-linux-gnu/libgmp.so.10 lib/libgmp.so.3
+env:
+  global:
+    - BLUESPECDIR=$PWD/Bluespec-2015.09.beta2/lib
+    - PATH=$PATH:$PWD/Bluespec-2015.09.beta2/bin
+    - LD_LIBRARY_PATH=$PWD/lib
+  matrix:
+    - CONNECTAL_TEST=examples/echo CONNECTAL_ARCH=verilator
 # required packages to install
 addons:
   apt:
@@ -19,8 +30,12 @@ addons:
       - gcc-4.8
       - gperf
       - libgmp-dev
+      - libjsoncpp-dev
       - libmpc-dev
       - libmpfr-dev
+      - linux-headers-generic
+      - python-dev
+      - python-ply
       - texinfo
       - verilator
 
@@ -38,4 +53,6 @@ before_install:
 # extra time duing long builds
 install: travis_wait
 
-script: ./build-verilator.sh
+script:
+- ./build-verilator.sh
+- export PYTHONPATH=$PWD/scripts; cd connectal; make scripts/syntax/parsetab.py; cd $CONNECTAL_TEST; make build.$CONNECTAL_ARCH run.$CONNECTAL_ARCH
