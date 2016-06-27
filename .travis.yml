@@ -2,6 +2,10 @@ language: cpp
 # run on new infrastructure
 sudo: false
 cache: apt
+-addons:
+-  apt:
+    packages:
+    - docker.io
 before_script:
 - docker pull jameyhicks/riscv-tools
 env:
