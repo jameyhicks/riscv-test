@@ -1,18 +1,16 @@
 language: cpp
 # run on new infrastructure
-sudo: false
+sudo: required
 cache: apt
--addons:
--  apt:
-    packages:
-    - docker.io
-before_script:
-- docker pull jameyhicks/riscv-tools
+services:
+- docker
 env:
   matrix:
     - CONNECTAL_TEST=examples/echo CONNECTAL_ARCH=verilator
 # extra time duing long builds
 install: travis_wait
+before_script:
+- docker pull jameyhicks/riscv-tools
 
 script:
 - cd connectal/$CONNECTAL_TEST; docker run -it -u travis -v $PWD/$PWD -w $PWD jameyhicks/riscv-tools make build.$CONNECTAL_ARCH
