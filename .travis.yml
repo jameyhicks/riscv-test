@@ -60,4 +60,4 @@ install: travis_wait
 
 script:
 - ./build-verilator.sh
-- tar -jcvf riscv-tools.tar.bz2 riscv
+- tar -jcf riscv-tools.tar.bz2 riscv
