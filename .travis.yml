@@ -1,7 +1,7 @@
-language: cpp
+sudo: true
 dist: trusty
+language: cpp
 # run on new infrastructure
-sudo: false
 cache: apt
 deploy:
   provider: releases
