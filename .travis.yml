@@ -1,5 +1,5 @@
 language: cpp
-dist:trusty
+dist: trusty
 # run on new infrastructure
 sudo: false
 cache: apt
