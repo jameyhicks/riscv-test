@@ -11,7 +11,7 @@ export LD_LIBRARY_PATH=$RISCV/lib
 rm -fr riscv
 
 (cd riscv-tools; git clean -fdx; \
- . build.common.sh; \
+ . build.common; \
  build_project riscv-gnu-toolchain --prefix=$RISCV --enable-linux --disable-multilib --with-xlen=64 --with-arch=IMAFD ; \
 )
 ls riscv/bin
