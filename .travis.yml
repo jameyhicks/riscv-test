@@ -35,9 +35,9 @@ addons:
       - bison
       - build-essential
       - flex
-      - g++-4.8
+      - g++-4.9
       - gawk
-      - gcc-4.8
+      - gcc-4.9
       - gperf
       - libgmp-dev
       - libjsoncpp-dev
@@ -52,8 +52,8 @@ addons:
 before_install:
   # make install destination
   - mkdir -p $RISCV
-  # use gcc 4.8
-  - export CXX=g++-4.8 CC=gcc-4.8
+  # use gcc 4.9
+  - export CXX=g++-4.9 CC=gcc-4.9
   - sed -i s/JOBS=16/JOBS=2/ riscv-tools/build.common
 
 # extra time duing long builds
